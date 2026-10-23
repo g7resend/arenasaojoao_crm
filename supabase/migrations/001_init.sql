@@ -26,7 +26,7 @@ create table settings (
   tpl_lesson_confirmation text not null default
     E'Olá, {nome}! 👋\n\nSua aula particular na *Arena São João* está confirmada:\n📅 *{data}*\n⏰ *{horario}*\n💰 {valor}\n\nTe esperamos na quadra! 🏐',
   tpl_schedule text not null default
-    E'🏐 *HORÁRIOS DA SEMANA — {arena}* 🏐\n📅 {semana}\n\n{horarios}\n\nConfirme sua presença e bora treinar! 💪🔥',
+    E'AULAS DE {quando} !! 🔥🚀\n\n{aulas}',
   updated_at timestamptz not null default now()
 );
 

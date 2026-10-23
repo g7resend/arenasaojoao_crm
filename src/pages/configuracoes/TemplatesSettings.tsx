@@ -40,12 +40,14 @@ function templateDefs(settings: Settings): TemplateDef[] {
     },
     {
       key: 'tpl_schedule',
-      title: 'Horários da semana (grupo)',
-      description: '{horarios} é preenchido automaticamente com as turmas fixas.',
+      title: 'Aulas do dia (grupo)',
+      description: '{aulas} é preenchido com as turmas fixas do dia; {quando} vira HOJE, AMANHÃ ou o dia da semana.',
       variables: {
+        quando: 'HOJE',
+        aulas: '17 hrs (iniciante)\n\n\n18 hrs (intermediário)\n\n\n19 hrs (avançado)',
+        data: '23/10/2026',
+        dia_semana: 'Sexta-feira',
         arena: settings.arena_name,
-        semana: '26/10 a 01/11',
-        horarios: '*Segunda-feira*\n⏰ 18:00 — Iniciante (Prof. Carlos)\n⏰ 19:00 — Intermediário (Prof. Carlos)',
       },
     },
   ]

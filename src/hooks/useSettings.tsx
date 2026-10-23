@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
+import { DEFAULT_SCHEDULE_TEMPLATE, isLegacyScheduleTemplate } from '../lib/schedule'
 import type { Settings } from '../types/db'
 
 interface SettingsContextValue {
@@ -22,7 +23,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     if (error) setError('Não foi possível carregar as configurações. Verifique se o SQL foi executado no Supabase.')
     else if (!data) setError('Configurações não encontradas. Rode o arquivo 001_init.sql no Supabase.')
     else {
-      setSettings(data as Settings)
+      const s = data as Settings
+      // modelos do formato semanal antigo ({semana}) passam a usar a mensagem diária
+      if (isLegacyScheduleTemplate(s.tpl_schedule)) s.tpl_schedule = DEFAULT_SCHEDULE_TEMPLATE
+      setSettings(s)
       setError(null)
     }
     setLoading(false)
