@@ -16,6 +16,7 @@ const Aulas = lazy(() => import('./pages/Aulas'))
 const Quadra = lazy(() => import('./pages/Quadra'))
 const Eventos = lazy(() => import('./pages/Eventos'))
 const EventoDetalhe = lazy(() => import('./pages/EventoDetalhe'))
+const Bar = lazy(() => import('./pages/Bar'))
 const Horarios = lazy(() => import('./pages/Horarios'))
 const Configuracoes = lazy(() => import('./pages/Configuracoes'))
 const ComoUsar = lazy(() => import('./pages/ComoUsar'))
@@ -49,6 +50,7 @@ export default function App() {
                 <Route path="quadra" element={<Quadra />} />
                 <Route path="eventos" element={<Eventos />} />
                 <Route path="eventos/:id" element={<EventoDetalhe />} />
+                <Route path="bar" element={<Bar />} />
                 <Route path="horarios" element={<Horarios />} />
                 <Route path="configuracoes" element={<Configuracoes />} />
                 <Route path="ajuda" element={<ComoUsar />} />

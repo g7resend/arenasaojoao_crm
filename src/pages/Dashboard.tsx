@@ -15,7 +15,7 @@ interface DashboardData {
   activeStudents: number
   overdueCount: number
   overdueAmount: number
-  received: { mensalidades: number; aulas: number; quadra: number; eventos: number }
+  received: { mensalidades: number; aulas: number; quadra: number; eventos: number; bar: number }
   lessons: LessonWithStudent[]
   bookings: CourtBooking[]
   nextEvent: (ArenaEvent & { paidCount: number; total: number }) | null
@@ -29,7 +29,7 @@ async function fetchDashboard(): Promise<DashboardData> {
   const monthStart = `${year}-${String(month).padStart(2, '0')}-01`
   const monthEnd = addDays(month === 12 ? `${year + 1}-01-01` : `${year}-${String(month + 1).padStart(2, '0')}-01`, -1)
 
-  const [students, overdue, paidPayments, paidLessons, paidBookings, eventSales, lessons, bookings, events] = await Promise.all([
+  const [students, overdue, paidPayments, paidLessons, paidBookings, eventSales, lessons, bookings, events, barSales] = await Promise.all([
     supabase.from('students').select('id', { count: 'exact', head: true }).eq('status', 'ativo'),
     supabase.from('payments_view').select('amount').eq('computed_status', 'atrasado'),
     supabase.from('payments').select('amount').eq('status', 'pago').gte('paid_at', monthStart).lte('paid_at', monthEnd),
@@ -39,6 +39,7 @@ async function fetchDashboard(): Promise<DashboardData> {
     supabase.from('private_lessons').select('*, students(name)').eq('status', 'agendada').gte('lesson_date', today).order('lesson_date').order('start_time').limit(5),
     supabase.from('court_bookings').select('*').gte('booking_date', today).order('booking_date').order('start_time').limit(5),
     supabase.from('events').select('*').gte('event_date', today).order('event_date').limit(1),
+    supabase.from('bar_sales').select('total').eq('canceled', false).gte('sold_at', `${monthStart}T00:00:00-03:00`).lt('sold_at', `${addDays(monthEnd, 1)}T00:00:00-03:00`),
   ])
 
   const failed = [students, overdue, paidPayments, paidLessons, paidBookings, eventSales, lessons, bookings, events].find((r) => r.error)
@@ -60,6 +61,8 @@ async function fetchDashboard(): Promise<DashboardData> {
       aulas: sum(paidLessons.data, 'price'),
       quadra: sum(paidBookings.data, 'price'),
       eventos: sum(eventSales.data, 'amount_paid'),
+      // o bar é opcional: se a tabela ainda não existir, o painel continua funcionando
+      bar: barSales.error ? 0 : sum(barSales.data, 'total'),
     },
     lessons: lessons.data as LessonWithStudent[],
     bookings: bookings.data as CourtBooking[],
@@ -127,12 +130,13 @@ export default function Dashboard() {
   if (!data) return <Spinner />
 
   const r = data.received
-  const receivedTotal = r.mensalidades + r.aulas + r.quadra + r.eventos
+  const receivedTotal = r.mensalidades + r.aulas + r.quadra + r.eventos + r.bar
   const breakdown = [
     ['Mensalidades', r.mensalidades],
     ['Aulas', r.aulas],
     ['Quadra', r.quadra],
     ['Eventos', r.eventos],
+    ['Bar', r.bar],
   ].filter(([, v]) => Number(v) > 0) as [string, number][]
 
   return (

@@ -127,3 +127,76 @@ export interface EventParticipant {
   checked_in_at: string | null
   created_at: string
 }
+
+export interface BarProduct {
+  id: string
+  name: string
+  category: string
+  price: number
+  cost: number
+  stock: number
+  min_stock: number
+  active: boolean
+  created_at: string
+}
+
+export interface BarStockMovement {
+  id: string
+  product_id: string
+  kind: 'entrada' | 'ajuste'
+  quantity: number
+  unit_cost: number | null
+  notes: string
+  created_at: string
+}
+
+export interface BarCashSession {
+  id: string
+  opened_at: string
+  opening_amount: number
+  closed_at: string | null
+  sales_count: number | null
+  total_sales: number | null
+  total_pix: number | null
+  total_dinheiro: number | null
+  total_cartao: number | null
+  total_expenses: number | null
+  expected_cash: number | null
+  counted_cash: number | null
+  notes: string
+}
+
+export interface BarSaleItem {
+  id: string
+  sale_id: string
+  product_id: string | null
+  product_name: string
+  quantity: number
+  unit_price: number
+  unit_cost: number
+}
+
+export interface BarSale {
+  id: string
+  session_id: string
+  sold_at: string
+  payment_method: PaymentMethod
+  total: number
+  canceled: boolean
+  canceled_at: string | null
+}
+
+export interface BarSaleWithItems extends BarSale {
+  bar_sale_items: BarSaleItem[]
+}
+
+export interface BarExpense {
+  id: string
+  expense_date: string
+  description: string
+  category: string
+  amount: number
+  payment_method: PaymentMethod
+  session_id: string | null
+  created_at: string
+}

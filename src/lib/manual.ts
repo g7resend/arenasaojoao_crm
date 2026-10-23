@@ -49,7 +49,7 @@ export const MANUAL: ManualSection[] = [
         q: 'Onde ficam as telas no celular?',
         a: [
           'A barra de baixo tem os atalhos principais: Início, Alunos, Mensalidades e Quadra.',
-          'As outras telas (Aulas avulsas, Eventos, Horários, Configurações, Como usar e Sair) ficam no botão "Mais".',
+          'As outras telas (Aulas avulsas, Eventos, Bar, Horários, Configurações, Como usar e Sair) ficam no botão "Mais".',
         ],
         tags: 'menu navegação mais barra',
       },
@@ -63,7 +63,7 @@ export const MANUAL: ManualSection[] = [
         id: 'painel',
         q: 'O que mostra a tela Início?',
         a: [
-          'É o resumo do dia: alunos ativos, mensalidades em atraso (quantidade e valor), quanto foi recebido no mês (mensalidades, aulas avulsas, quadra e eventos), o próximo evento e as próximas aulas e reservas da quadra.',
+          'É o resumo do dia: alunos ativos, mensalidades em atraso (quantidade e valor), quanto foi recebido no mês (mensalidades, aulas avulsas, quadra, eventos e bar), o próximo evento e as próximas aulas e reservas da quadra.',
           'Toque em qualquer cartão para abrir a tela correspondente.',
         ],
         tags: 'dashboard inicio resumo painel visão geral recebido',
@@ -331,6 +331,114 @@ export const MANUAL: ManualSection[] = [
         q: 'O evento lotou. Ainda dá para adicionar alguém?',
         a: ['Sim. O sistema pede uma confirmação antes de passar da capacidade.'],
         tags: 'lotado capacidade limite',
+      },
+    ],
+  },
+  {
+    id: 'bar',
+    title: 'Bar',
+    items: [
+      {
+        id: 'bar-comecar',
+        q: 'Como começar a usar o bar?',
+        a: [
+          'O bar fica em Mais → Bar e tem 4 abas: Caixa (vender), Estoque (produtos), Despesas e Fechamentos.',
+          '1. Na aba Estoque, toque em "Novo produto" e cadastre cada item: nome, categoria, preço de venda, custo (opcional) e quantos tem.',
+          '2. Na aba Caixa, toque em "Abrir caixa" e informe o troco que tem na gaveta.',
+          '3. Pronto: use "Nova venda" a cada venda. No fim do dia, "Fechar caixa".',
+        ],
+        tags: 'bar cantina lanchonete bebidas começar produtos',
+        to: '/bar',
+      },
+      {
+        id: 'bar-vender',
+        q: 'Como registrar uma venda?',
+        a: [
+          '1. Em Bar → Caixa, toque em "Nova venda".',
+          '2. Toque nos produtos (cada toque soma 1). Use − e + na lista "Itens da venda" para corrigir.',
+          '3. Escolha Pix, Dinheiro ou Cartão. No dinheiro, digite o valor recebido para ver o troco.',
+          '4. Toque em "Finalizar". O estoque baixa sozinho.',
+          'O caixa precisa estar aberto para vender.',
+        ],
+        tags: 'venda vender registrar cobrar troco pix dinheiro cartão',
+        to: '/bar',
+      },
+      {
+        id: 'bar-cancelar',
+        q: 'Lancei uma venda errada. Como cancelar?',
+        a: [
+          'Em Bar → Caixa, na lista "Vendas deste caixa", toque no ⋮ da venda → "Cancelar venda". Os produtos voltam para o estoque.',
+          'Só dá para cancelar enquanto o caixa está aberto. Depois de fechado, o fechamento fica guardado como foi.',
+        ],
+        tags: 'cancelar venda errada estornar desfazer',
+      },
+      {
+        id: 'bar-fechar',
+        q: 'Como fechar o caixa no fim do dia?',
+        a: [
+          '1. Em Bar → Caixa, toque em "Fechar caixa".',
+          '2. O sistema mostra quanto deveria ter de dinheiro na gaveta (troco + vendas em dinheiro − saídas).',
+          '3. Conte o dinheiro, digite o valor e veja se confere, sobrou ou faltou.',
+          '4. Toque em "Fechar caixa". O resumo abre na hora e pode ser copiado para mandar no WhatsApp.',
+          'Os fechamentos anteriores ficam na aba Fechamentos.',
+        ],
+        tags: 'fechar caixa fechamento conferir dinheiro sobrou faltou resumo',
+        to: '/bar',
+      },
+      {
+        id: 'bar-saida',
+        q: 'Tirei dinheiro da gaveta para pagar algo. Como lanço?',
+        a: [
+          'Em Bar → Caixa, toque em "Saída do caixa", escreva o que foi pago e o valor. Ela vira uma despesa e o fechamento já desconta da gaveta.',
+          'Em Despesas → "Nova despesa", com o caixa aberto, também dá para ligar "Paguei com o dinheiro do caixa".',
+        ],
+        tags: 'saída retirada sangria gaveta pagar gelo',
+      },
+      {
+        id: 'bar-estoque',
+        q: 'Chegou mercadoria. Como dar entrada no estoque?',
+        a: [
+          '1. Em Bar → Estoque, toque no botão de entrada (caixa com +) ao lado do produto.',
+          '2. Digite a quantidade que chegou e, se quiser, o custo por unidade.',
+          '3. Com o custo preenchido, deixe ligado "Lançar a compra nas despesas" para a compra já entrar em Despesas.',
+        ],
+        tags: 'entrada estoque compra mercadoria repor chegou fornecedor',
+        to: '/bar?aba=estoque',
+      },
+      {
+        id: 'bar-contar',
+        q: 'O estoque do sistema não bate com o que tenho. E agora?',
+        a: [
+          'Em Bar → Estoque, toque no ⋮ do produto → "Contar estoque", digite quantos tem de verdade e o motivo (quebrou, venceu, consumo próprio). O sistema corrige e guarda no Histórico.',
+          'Se um produto aparece com "Conferir", o estoque ficou negativo: provavelmente vendeu sem lançar a entrada. Faça a contagem.',
+        ],
+        tags: 'ajuste contagem inventário estoque errado negativo conferir perda',
+      },
+      {
+        id: 'bar-repor',
+        q: 'Como saber o que preciso comprar?',
+        a: [
+          'Em Bar → Estoque, a aba "Para repor" mostra os produtos que acabaram ou estão abaixo do aviso. O aviso de cada produto é o campo "Avisar com" no cadastro (ex.: 5 = avisa quando tiver 5 ou menos).',
+        ],
+        tags: 'repor comprar acabou estoque baixo aviso mínimo',
+        to: '/bar?aba=estoque',
+      },
+      {
+        id: 'bar-parar-vender',
+        q: 'Parei de vender um produto. Excluo?',
+        a: ['Prefira ⋮ → "Tirar da venda": ele some da tela de venda, mas o histórico fica. Para voltar, use a aba "Fora da venda" → ⋮ → "Voltar para a venda".'],
+        tags: 'desativar produto excluir parar de vender',
+      },
+      {
+        id: 'bar-despesas',
+        q: 'Onde vejo quanto o bar lucrou no mês?',
+        a: [
+          'Em Bar → Despesas aparecem as vendas, as despesas e o saldo do mês (use as setas para trocar de mês).',
+          'Se os produtos têm custo cadastrado, aparece também o lucro nos produtos vendidos (preço − custo).',
+          'As vendas do bar também entram no "Recebido" da tela Início.',
+        ],
+        tags: 'lucro saldo mês relatório despesas vendas quanto ganhou',
+        to: '/bar?aba=despesas',
       },
     ],
   },
