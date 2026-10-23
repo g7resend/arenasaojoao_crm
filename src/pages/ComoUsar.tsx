@@ -69,8 +69,10 @@ export default function ComoUsar() {
         <div className="relative">
           <Search size={18} className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-neutral-400" />
           <Input
-            type="search"
-            placeholder="Ex.: gerar mensalidade, check-in, cobrar…"
+            type="text"
+            inputMode="search"
+            enterKeyHint="search"
+            placeholder="Ex.: cobrar, check-in, turma…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="pl-10 pr-10"
