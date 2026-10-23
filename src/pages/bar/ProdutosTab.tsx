@@ -139,43 +139,47 @@ export default function ProdutosTab() {
                   {list.map((p) => {
                     const level = stockLevel(p)
                     return (
-                      <li key={p.id} className="flex items-center gap-3 px-4 py-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-medium text-neutral-900">{p.name}</p>
-                          <p className="text-sm text-neutral-500">
-                            <span className="font-semibold text-neutral-800">{formatCurrency(p.price)}</span>
-                            {Number(p.cost) > 0 && <span> · custo {formatCurrency(p.cost)}</span>}
-                          </p>
+                      <li key={p.id} className="px-4 py-3">
+                        <div className="flex items-start gap-3">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-neutral-900">{p.name}</p>
+                            <p className="text-sm text-neutral-500">
+                              <span className="font-semibold text-neutral-800">{formatCurrency(p.price)}</span>
+                              {Number(p.cost) > 0 && <span> · custo {formatCurrency(p.cost)}</span>}
+                            </p>
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <p
+                              className={`text-lg font-bold leading-tight tabular-nums ${
+                                level === 'zerado' ? 'text-red-600' : level === 'baixo' ? 'text-amber-700' : 'text-neutral-900'
+                              }`}
+                            >
+                              {p.stock}
+                            </p>
+                            {level === 'ok' ? (
+                              <p className="text-[11px] text-neutral-400">em estoque</p>
+                            ) : (
+                              <Badge color={level === 'zerado' ? 'red' : 'yellow'}>{p.stock < 0 ? 'Conferir' : level === 'zerado' ? 'Acabou' : 'Baixo'}</Badge>
+                            )}
+                          </div>
                         </div>
-                        <div className="shrink-0 text-right">
-                          <p
-                            className={`text-lg font-bold leading-tight tabular-nums ${
-                              level === 'zerado' ? 'text-red-600' : level === 'baixo' ? 'text-amber-700' : 'text-neutral-900'
-                            }`}
-                          >
-                            {p.stock}
-                          </p>
-                          {level === 'ok' ? (
-                            <p className="text-[11px] text-neutral-400">em estoque</p>
-                          ) : (
-                            <Badge color={level === 'zerado' ? 'red' : 'yellow'}>{p.stock < 0 ? 'Conferir' : level === 'zerado' ? 'Acabou' : 'Baixo'}</Badge>
-                          )}
-                        </div>
-                        <Button size="sm" variant="secondary" icon={<PackagePlus size={16} />} onClick={() => setEntry(p)} className="px-2.5">
-                          Entrada
-                        </Button>
-                        <div className="-mr-2">
-                          <Dropdown
-                            items={[
-                              { label: 'Editar', icon: <Pencil size={16} />, onClick: () => setForm({ open: true, product: p }) },
-                              { label: 'Contar estoque', icon: <ClipboardCheck size={16} />, onClick: () => setAdjust(p) },
-                              { label: 'Histórico', icon: <History size={16} />, onClick: () => setHistory(p) },
-                              p.active
-                                ? { label: 'Tirar da venda', icon: <EyeOff size={16} />, onClick: () => toggleActive(p) }
-                                : { label: 'Voltar para a venda', icon: <Eye size={16} />, onClick: () => toggleActive(p) },
-                              { label: 'Excluir', icon: <Trash2 size={16} />, onClick: () => remove(p), danger: true },
-                            ]}
-                          />
+                        <div className="mt-2 flex items-center gap-2">
+                          <Button size="sm" variant="secondary" icon={<PackagePlus size={16} />} onClick={() => setEntry(p)}>
+                            Entrada
+                          </Button>
+                          <div className="-mr-2 ml-auto">
+                            <Dropdown
+                              items={[
+                                { label: 'Editar', icon: <Pencil size={16} />, onClick: () => setForm({ open: true, product: p }) },
+                                { label: 'Contar estoque', icon: <ClipboardCheck size={16} />, onClick: () => setAdjust(p) },
+                                { label: 'Histórico', icon: <History size={16} />, onClick: () => setHistory(p) },
+                                p.active
+                                  ? { label: 'Tirar da venda', icon: <EyeOff size={16} />, onClick: () => toggleActive(p) }
+                                  : { label: 'Voltar para a venda', icon: <Eye size={16} />, onClick: () => toggleActive(p) },
+                                { label: 'Excluir', icon: <Trash2 size={16} />, onClick: () => remove(p), danger: true },
+                              ]}
+                            />
+                          </div>
                         </div>
                       </li>
                     )
