@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* fonte condensada no estilo do "FUTEVÔLEI" do escudo, para títulos */
+  --font-display: "Oswald", "Arial Narrow", ui-sans-serif, sans-serif;
+
+  /* bordô do escudo da Arena (#571314 = brand-900) */
+  --color-brand-50: #fcf4f4;
+  --color-brand-100: #f9e6e6;
+  --color-brand-200: #f3d0d1;
+  --color-brand-300: #e9aeaf;
+  --color-brand-400: #d97f81;
+  --color-brand-500: #c4555a;
+  --color-brand-600: #a8383c;
+  --color-brand-700: #8c2629;
+  --color-brand-800: #6f1a1c;
+  --color-brand-900: #571314;
+  --color-brand-950: #330a0b;
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-neutral-100 text-neutral-800 antialiased;
+  }
+  input[type="date"],
+  input[type="time"] {
+    min-height: 2.75rem;
+  }
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
