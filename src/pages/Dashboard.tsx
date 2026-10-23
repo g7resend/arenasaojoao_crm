@@ -139,7 +139,7 @@ export default function Dashboard() {
     <>
       {/* Banner da Arena */}
       <div className="relative mb-5 h-28 overflow-hidden rounded-2xl border-b-4 border-brand-800 bg-neutral-900 shadow-sm sm:h-36">
-        <img src={`${import.meta.env.BASE_URL}banner-inicio.jpg`} alt="" className="absolute inset-0 h-full w-full object-cover object-[50%_28%]" />
+        <img src={`${import.meta.env.BASE_URL}banner-inicio.jpg`} alt="" className="absolute inset-0 h-full w-full object-cover object-[50%_18%]" />
         <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/90 via-neutral-950/50 to-transparent" />
         <div className="relative flex h-full flex-col justify-center px-5">
           <p className="text-sm text-neutral-300">{formatDateLong(todayISO())}</p>
