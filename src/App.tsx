@@ -18,6 +18,7 @@ const Eventos = lazy(() => import('./pages/Eventos'))
 const EventoDetalhe = lazy(() => import('./pages/EventoDetalhe'))
 const Horarios = lazy(() => import('./pages/Horarios'))
 const Configuracoes = lazy(() => import('./pages/Configuracoes'))
+const ComoUsar = lazy(() => import('./pages/ComoUsar'))
 
 /** Só renderiza as telas internas com usuário logado */
 function ProtectedRoute() {
@@ -50,6 +51,7 @@ export default function App() {
                 <Route path="eventos/:id" element={<EventoDetalhe />} />
                 <Route path="horarios" element={<Horarios />} />
                 <Route path="configuracoes" element={<Configuracoes />} />
+                <Route path="ajuda" element={<ComoUsar />} />
               </Route>
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,7 +1,7 @@
 import { Suspense, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
-  CalendarClock, CalendarDays, Home, LogOut, Megaphone, Menu, PartyPopper, Receipt, Settings, Users,
+  CalendarClock, CalendarDays, CircleHelp, Home, LogOut, Megaphone, Menu, PartyPopper, Receipt, Settings, Users,
   type LucideIcon,
 } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
@@ -24,6 +24,7 @@ const NAV: NavItem[] = [
   { to: '/eventos', label: 'Eventos', icon: PartyPopper },
   { to: '/horarios', label: 'Horários', icon: Megaphone },
   { to: '/configuracoes', label: 'Configurações', icon: Settings },
+  { to: '/ajuda', label: 'Como usar', icon: CircleHelp },
 ]
 
 // No celular: 4 atalhos fixos + "Mais"
