@@ -131,7 +131,7 @@ export default function EventoDetalhe() {
       </Link>
 
       <Card className="mb-4 overflow-hidden">
-        {event.image_path && <img src={eventImageUrl(event.image_path)!} alt={`Imagem do evento ${event.name}`} className="max-h-96 w-full bg-neutral-200 object-cover" />}
+        {event.image_path && <img src={eventImageUrl(event.image_path)!} alt={`Imagem do evento ${event.name}`} className="max-h-80 w-full bg-neutral-950 object-contain" />}
         <div className="flex items-start gap-3 border-b-2 border-brand-800 bg-neutral-950 px-5 py-4">
           <div className="min-w-0 flex-1">
             <h1 className="font-display text-xl font-bold uppercase tracking-wide text-white">{event.name}</h1>
