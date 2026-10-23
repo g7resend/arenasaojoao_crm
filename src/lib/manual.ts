@@ -286,6 +286,18 @@ export const MANUAL: ManualSection[] = [
         to: '/eventos',
       },
       {
+        id: 'imagem-evento',
+        q: 'Como colocar a imagem (arte) do evento?',
+        a: [
+          '1. Ao criar ou editar o evento, toque em "Adicionar imagem" no topo do formulário.',
+          '2. No celular, escolha a foto da galeria (ou tire uma na hora). No computador, escolha o arquivo.',
+          '3. Toque em Salvar. A imagem aparece na lista de eventos, dentro do evento e no Início.',
+          'Para mudar, use "Trocar"; para tirar, "Remover". A imagem é reduzida automaticamente antes de enviar.',
+        ],
+        tags: 'imagem foto arte banner flyer upload galeria',
+        to: '/eventos',
+      },
+      {
         id: 'adicionar-pagante',
         q: 'Como adicionar quem pagou o ingresso?',
         a: [

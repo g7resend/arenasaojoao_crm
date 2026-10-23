@@ -16,7 +16,7 @@ npm run dev            # http://localhost:5173
 
 ### 1. Banco de dados (Supabase)
 1. No painel do Supabase, abra **SQL Editor → New query**.
-2. Cole todo o conteúdo de `supabase/migrations/001_init.sql` e clique em **Run**.
+2. Cole todo o conteúdo de `supabase/migrations/001_init.sql` e clique em **Run**. Depois, numa nova query, faça o mesmo com `supabase/migrations/002_event_images.sql` (imagens dos eventos).
 3. Em **Authentication → Users → Add user → Create new user**, crie o login do administrador (marque **Auto Confirm User**).
 4. Em **Authentication → Sign In / Providers**, **desative “Allow new users to sign up”**. Sem isso, qualquer pessoa poderia criar uma conta e ler os dados.
 

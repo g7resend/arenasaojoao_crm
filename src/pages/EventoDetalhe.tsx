@@ -14,6 +14,7 @@ import { Dropdown } from '../components/ui/Dropdown'
 import { EventFormModal } from '../components/events/EventFormModal'
 import { ParticipantFormModal } from '../components/events/ParticipantFormModal'
 import { CapacityBar } from '../components/events/CapacityBar'
+import { deleteEventImage, eventImageUrl } from '../lib/eventImages'
 import type { ArenaEvent, EventLot, EventParticipant } from '../types/db'
 
 type Filter = 'todos' | 'entraram' | 'faltam'
@@ -103,6 +104,7 @@ export default function EventoDetalhe() {
     if (!confirm(`Excluir o evento "${event.name}" e toda a lista de ${participants.length} pagante(s)?`)) return
     const { error } = await supabase.from('events').delete().eq('id', event.id)
     if (error) return toast('Erro ao excluir evento.', 'error')
+    await deleteEventImage(event.image_path)
     toast('Evento excluído.')
     navigate('/eventos', { replace: true })
   }
@@ -129,6 +131,7 @@ export default function EventoDetalhe() {
       </Link>
 
       <Card className="mb-4 overflow-hidden">
+        {event.image_path && <img src={eventImageUrl(event.image_path)!} alt={`Imagem do evento ${event.name}`} className="max-h-96 w-full bg-neutral-200 object-cover" />}
         <div className="flex items-start gap-3 border-b-2 border-brand-800 bg-neutral-950 px-5 py-4">
           <div className="min-w-0 flex-1">
             <h1 className="font-display text-xl font-bold uppercase tracking-wide text-white">{event.name}</h1>

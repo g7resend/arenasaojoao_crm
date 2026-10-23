@@ -102,6 +102,7 @@ export interface ArenaEvent {
   location: string
   capacity: number | null
   notes: string
+  image_path: string | null
   created_at: string
 }
 

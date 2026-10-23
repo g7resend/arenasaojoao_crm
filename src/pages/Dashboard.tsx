@@ -6,6 +6,7 @@ import { MONTHS, addDays, currentYearMonth, formatCurrency, formatDateLong, form
 import { useToast } from '../hooks/useToast'
 import { Card, Spinner } from '../components/ui/Misc'
 import { CapacityBar } from '../components/events/CapacityBar'
+import { eventImageUrl } from '../lib/eventImages'
 import type { ArenaEvent, CourtBooking, PrivateLesson } from '../types/db'
 
 type LessonWithStudent = PrivateLesson & { students: { name: string } | null }
@@ -136,10 +137,15 @@ export default function Dashboard() {
 
   return (
     <>
-      <div className="mb-5">
-        <p className="text-sm text-neutral-500">{formatDateLong(todayISO())}</p>
-        <h1 className="font-display text-2xl font-bold uppercase tracking-wide text-neutral-900">Visão geral</h1>
-        <div className="mt-1 h-1 w-10 rounded-full bg-brand-800" />
+      {/* Banner da Arena */}
+      <div className="relative mb-5 h-28 overflow-hidden rounded-2xl border-b-4 border-brand-800 bg-neutral-900 shadow-sm sm:h-36">
+        <img src={`${import.meta.env.BASE_URL}banner-inicio.jpg`} alt="" className="absolute inset-0 h-full w-full object-cover object-[50%_28%]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/90 via-neutral-950/50 to-transparent" />
+        <div className="relative flex h-full flex-col justify-center px-5">
+          <p className="text-sm text-neutral-300">{formatDateLong(todayISO())}</p>
+          <h1 className="font-display text-2xl font-bold uppercase tracking-wide text-white sm:text-3xl">Visão geral</h1>
+          <div className="mt-1 h-1 w-10 rounded-full bg-brand-600" />
+        </div>
       </div>
 
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-3">
@@ -169,7 +175,11 @@ export default function Dashboard() {
         <Link to={`/eventos/${data.nextEvent.id}`} className="mb-4 block">
           <Card className="overflow-hidden transition-shadow hover:shadow-md">
             <div className="flex items-center gap-3 border-b-2 border-brand-800 bg-neutral-950 px-4 py-3">
-              <PartyPopper size={20} className="shrink-0 text-brand-300" />
+              {data.nextEvent.image_path ? (
+                <img src={eventImageUrl(data.nextEvent.image_path)!} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
+              ) : (
+                <PartyPopper size={20} className="shrink-0 text-brand-300" />
+              )}
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-300">Próximo evento</p>
                 <p className="truncate font-display text-lg font-bold uppercase tracking-wide text-white">{data.nextEvent.name}</p>

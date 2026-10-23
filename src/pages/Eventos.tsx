@@ -8,6 +8,7 @@ import { Button } from '../components/ui/Button'
 import { Card, EmptyState, PageHeader, Spinner, Tabs } from '../components/ui/Misc'
 import { EventFormModal } from '../components/events/EventFormModal'
 import { CapacityBar } from '../components/events/CapacityBar'
+import { eventImageUrl } from '../lib/eventImages'
 import type { ArenaEvent, EventParticipant } from '../types/db'
 
 type View = 'proximos' | 'anteriores'
@@ -86,6 +87,7 @@ export default function Eventos() {
             return (
               <Link key={ev.id} to={`/eventos/${ev.id}`} className="block">
                 <Card className="h-full overflow-hidden transition-shadow hover:shadow-md">
+                  {ev.image_path && <img src={eventImageUrl(ev.image_path)!} alt="" loading="lazy" className="aspect-[2/1] w-full bg-neutral-200 object-cover" />}
                   <div className="border-b-2 border-brand-800 bg-neutral-950 px-4 py-3">
                     <h2 className="truncate font-display text-lg font-bold uppercase tracking-wide text-white">{ev.name}</h2>
                     <p className="mt-0.5 flex items-center gap-1.5 text-sm text-neutral-300">
