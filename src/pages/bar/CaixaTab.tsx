@@ -70,9 +70,9 @@ export default function CaixaTab({ onGoToProducts }: { onGoToProducts: () => voi
   if (loading) return <Spinner />
 
   const close = () => setModal(null)
-  const afterSave = () => {
+  const afterSave = async () => {
+    await load()
     setModal(null)
-    load()
   }
 
   // ---------------- Caixa fechado ----------------
@@ -220,10 +220,10 @@ export default function CaixaTab({ onGoToProducts }: { onGoToProducts: () => voi
         cashOut={cashOut}
         totalSales={total}
         onClose={close}
-        onSaved={(id) => {
+        onSaved={async (id) => {
+          await load()
           setModal(null)
           setClosedId(id)
-          load()
         }}
       />
     </>

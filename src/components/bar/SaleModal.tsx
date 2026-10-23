@@ -14,7 +14,7 @@ interface Props {
   open: boolean
   products: BarProduct[]
   onClose: () => void
-  onSaved: () => void
+  onSaved: () => Promise<void>
 }
 
 /** Nova venda: toca nos produtos, escolhe a forma de pagamento e finaliza */
@@ -71,10 +71,14 @@ export function SaleModal({ open, products, onClose, onSaved }: Props) {
       p_method: method,
       p_items: lines.map((l) => ({ product_id: l.product.id, quantity: l.qty })),
     })
-    setSaving(false)
-    if (error) return toast(barError(error, 'Erro ao registrar a venda.'), 'error')
+    if (error) {
+      setSaving(false)
+      return toast(barError(error, 'Erro ao registrar a venda.'), 'error')
+    }
     toast(`Venda de ${formatCurrency(total)} registrada!`)
-    onSaved()
+    // só libera depois que a lista atualizar, para ninguém registrar a mesma venda duas vezes
+    await onSaved()
+    setSaving(false)
   }
 
   return (

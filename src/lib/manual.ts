@@ -398,7 +398,7 @@ export const MANUAL: ManualSection[] = [
         id: 'bar-estoque',
         q: 'Chegou mercadoria. Como dar entrada no estoque?',
         a: [
-          '1. Em Bar → Estoque, toque no botão de entrada (caixa com +) ao lado do produto.',
+          '1. Em Bar → Estoque, toque em "Entrada", ao lado do produto.',
           '2. Digite a quantidade que chegou e, se quiser, o custo por unidade.',
           '3. Com o custo preenchido, deixe ligado "Lançar a compra nas despesas" para a compra já entrar em Despesas.',
         ],

@@ -88,7 +88,7 @@ export default function DespesasTab() {
           <IconButton label="Mês anterior" onClick={() => shiftMonth(-1)}>
             <ChevronLeft size={18} />
           </IconButton>
-          <span className="min-w-36 text-center text-sm font-semibold text-neutral-800">
+          <span className="min-w-28 text-center text-sm font-semibold text-neutral-800">
             {MONTHS[month - 1]}/{year}
           </span>
           <IconButton label="Próximo mês" onClick={() => shiftMonth(1)}>
@@ -104,20 +104,20 @@ export default function DespesasTab() {
         <Spinner />
       ) : (
         <>
-          <div className="mb-4 grid grid-cols-3 gap-3">
-            <Card className="px-4 py-3">
-              <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">Vendas</p>
-              <p className="truncate text-lg font-bold tabular-nums text-emerald-700">{formatCurrency(sales)}</p>
-            </Card>
-            <Card className="px-4 py-3">
-              <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">Despesas</p>
-              <p className="truncate text-lg font-bold tabular-nums text-red-700">{formatCurrency(spent)}</p>
-            </Card>
-            <Card className="px-4 py-3">
-              <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">Saldo</p>
-              <p className={`truncate text-lg font-bold tabular-nums ${balance < 0 ? 'text-red-700' : 'text-neutral-900'}`}>{formatCurrency(balance)}</p>
-            </Card>
-          </div>
+          <Card className="mb-4 px-4 py-2">
+            <div className="flex justify-between py-1 text-sm">
+              <span className="text-neutral-600">Vendas do bar</span>
+              <span className="font-semibold tabular-nums text-emerald-700">{formatCurrency(sales)}</span>
+            </div>
+            <div className="flex justify-between py-1 text-sm">
+              <span className="text-neutral-600">− Despesas</span>
+              <span className="font-semibold tabular-nums text-red-700">{formatCurrency(spent)}</span>
+            </div>
+            <div className="mt-1 flex items-baseline justify-between border-t border-neutral-100 pt-2">
+              <span className="text-xs font-medium uppercase tracking-wide text-neutral-500">Saldo do mês</span>
+              <span className={`text-xl font-bold tabular-nums ${balance < 0 ? 'text-red-700' : 'text-neutral-900'}`}>{formatCurrency(balance)}</span>
+            </div>
+          </Card>
           {(productProfit !== null || byCategory.length > 1) && (
             <div className="mb-4 space-y-1 text-sm text-neutral-600">
               {productProfit !== null && (
@@ -177,9 +177,9 @@ export default function DespesasTab() {
         expense={form.expense}
         openSessionId={openSessionId}
         onClose={() => setForm({ open: false, expense: null })}
-        onSaved={() => {
+        onSaved={async () => {
+          await load()
           setForm({ open: false, expense: null })
-          load()
         }}
       />
     </>

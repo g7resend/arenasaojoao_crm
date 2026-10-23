@@ -7,7 +7,7 @@ import { Button } from '../ui/Button'
 import { MoneyInput, Textarea } from '../ui/Field'
 import { Modal } from '../ui/Modal'
 
-export function OpenSessionModal({ open, onClose, onSaved }: { open: boolean; onClose: () => void; onSaved: () => void }) {
+export function OpenSessionModal({ open, onClose, onSaved }: { open: boolean; onClose: () => void; onSaved: () => Promise<void> }) {
   const toast = useToast()
   const [amount, setAmount] = useState('')
   const [saving, setSaving] = useState(false)
@@ -20,11 +20,14 @@ export function OpenSessionModal({ open, onClose, onSaved }: { open: boolean; on
     e.preventDefault()
     setSaving(true)
     const { error } = await supabase.from('bar_cash_sessions').insert({ opening_amount: parseMoney(amount) })
-    setSaving(false)
-    // 23505 = já existe um caixa aberto (índice único)
-    if (error) return toast(error.code === '23505' ? 'Já existe um caixa aberto.' : 'Erro ao abrir o caixa.', 'error')
+    if (error) {
+      setSaving(false)
+      // 23505 = já existe um caixa aberto (índice único)
+      return toast(error.code === '23505' ? 'Já existe um caixa aberto.' : 'Erro ao abrir o caixa.', 'error')
+    }
     toast('Caixa aberto! Boas vendas 🍻')
-    onSaved()
+    await onSaved()
+    setSaving(false)
   }
 
   return (
@@ -62,7 +65,7 @@ interface CloseProps {
   cashOut: number
   totalSales: number
   onClose: () => void
-  onSaved: (sessionId: string) => void
+  onSaved: (sessionId: string) => Promise<void>
 }
 
 export function CloseSessionModal({ open, opening, cashSales, cashOut, totalSales, onClose, onSaved }: CloseProps) {
@@ -86,10 +89,13 @@ export function CloseSessionModal({ open, opening, cashSales, cashOut, totalSale
     if (!counted.trim()) return toast('Conte o dinheiro da gaveta e informe o valor.', 'error')
     setSaving(true)
     const { data, error } = await supabase.rpc('bar_close_session', { p_counted: parseMoney(counted), p_notes: notes.trim() })
-    setSaving(false)
-    if (error) return toast(barError(error, 'Erro ao fechar o caixa.'), 'error')
+    if (error) {
+      setSaving(false)
+      return toast(barError(error, 'Erro ao fechar o caixa.'), 'error')
+    }
     toast('Caixa fechado!')
-    onSaved(data as string)
+    await onSaved(data as string)
+    setSaving(false)
   }
 
   const row = (label: string, value: string, strong = false) => (

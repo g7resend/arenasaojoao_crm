@@ -64,7 +64,7 @@ interface TabsProps<T extends string> {
 /** Abas/segmentos roláveis horizontalmente (bom para filtros no celular) */
 export function Tabs<T extends string>({ tabs, value, onChange }: TabsProps<T>) {
   return (
-    <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+    <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0">
       <div className="inline-flex gap-1 rounded-xl bg-neutral-100 p-1">
         {tabs.map((t) => (
           <button

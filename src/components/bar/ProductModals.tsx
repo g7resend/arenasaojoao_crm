@@ -36,7 +36,7 @@ function initialProduct(p: BarProduct | null | undefined): ProductForm {
   }
 }
 
-export function ProductFormModal({ open, product, onClose, onSaved }: { open: boolean; product?: BarProduct | null; onClose: () => void; onSaved: () => void }) {
+export function ProductFormModal({ open, product, onClose, onSaved }: { open: boolean; product?: BarProduct | null; onClose: () => void; onSaved: () => Promise<void> }) {
   const toast = useToast()
   const [form, setForm] = useState<ProductForm>(() => initialProduct(product))
   const [saving, setSaving] = useState(false)
@@ -62,10 +62,13 @@ export function ProductFormModal({ open, product, onClose, onSaved }: { open: bo
     }
     if (product) {
       const { error } = await supabase.from('bar_products').update(payload).eq('id', product.id)
-      setSaving(false)
-      if (error) return toast('Erro ao salvar o produto.', 'error')
+      if (error) {
+        setSaving(false)
+        return toast('Erro ao salvar o produto.', 'error')
+      }
       toast('Produto atualizado!')
-      return onSaved()
+      await onSaved()
+      return setSaving(false)
     }
     const { data, error } = await supabase.from('bar_products').insert(payload).select('id').single()
     if (error) {
@@ -83,9 +86,9 @@ export function ProductFormModal({ open, product, onClose, onSaved }: { open: bo
       })
       if (stockError) toast('Produto criado, mas o estoque inicial não foi salvo. Use "Entrada".', 'error')
     }
-    setSaving(false)
     toast('Produto cadastrado!')
-    onSaved()
+    await onSaved()
+    setSaving(false)
   }
 
   return (
@@ -143,7 +146,7 @@ export function ProductFormModal({ open, product, onClose, onSaved }: { open: bo
 // ---------------------------------------------------------------------
 // Entrada de mercadoria
 // ---------------------------------------------------------------------
-export function StockEntryModal({ product, onClose, onSaved }: { product: BarProduct | null; onClose: () => void; onSaved: () => void }) {
+export function StockEntryModal({ product, onClose, onSaved }: { product: BarProduct | null; onClose: () => void; onSaved: () => Promise<void> }) {
   const toast = useToast()
   const [qty, setQty] = useState('')
   const [cost, setCost] = useState('')
@@ -177,10 +180,13 @@ export function StockEntryModal({ product, onClose, onSaved }: { product: BarPro
       p_notes: notes.trim(),
       p_expense_method: asExpense && unitCost > 0 ? method : null,
     })
-    setSaving(false)
-    if (error) return toast(barError(error, 'Erro ao lançar a entrada.'), 'error')
+    if (error) {
+      setSaving(false)
+      return toast(barError(error, 'Erro ao lançar a entrada.'), 'error')
+    }
     toast(`+${quantity} ${product.name} no estoque!`)
-    onSaved()
+    await onSaved()
+    setSaving(false)
   }
 
   return (
@@ -242,7 +248,7 @@ export function StockEntryModal({ product, onClose, onSaved }: { product: BarPro
 // ---------------------------------------------------------------------
 // Ajuste pela contagem
 // ---------------------------------------------------------------------
-export function StockAdjustModal({ product, onClose, onSaved }: { product: BarProduct | null; onClose: () => void; onSaved: () => void }) {
+export function StockAdjustModal({ product, onClose, onSaved }: { product: BarProduct | null; onClose: () => void; onSaved: () => Promise<void> }) {
   const toast = useToast()
   const [counted, setCounted] = useState('')
   const [notes, setNotes] = useState('')
@@ -263,10 +269,13 @@ export function StockAdjustModal({ product, onClose, onSaved }: { product: BarPr
     if (counted === '' || toInt(counted) < 0) return toast('Informe quantas unidades você contou.', 'error')
     setSaving(true)
     const { error } = await supabase.rpc('bar_stock_adjust', { p_product: product.id, p_counted: toInt(counted), p_notes: notes.trim() })
-    setSaving(false)
-    if (error) return toast(barError(error, 'Erro ao ajustar o estoque.'), 'error')
+    if (error) {
+      setSaving(false)
+      return toast(barError(error, 'Erro ao ajustar o estoque.'), 'error')
+    }
     toast(diff === 0 ? 'Estoque conferido: nada mudou.' : 'Estoque ajustado!')
-    onSaved()
+    await onSaved()
+    setSaving(false)
   }
 
   return (

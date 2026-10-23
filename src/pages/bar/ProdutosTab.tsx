@@ -66,16 +66,16 @@ export default function ProdutosTab() {
 
   if (loading) return <Spinner />
 
-  const saved = () => {
+  const saved = async () => {
+    await load()
     setForm({ open: false, product: null })
     setEntry(null)
     setAdjust(null)
-    load()
   }
 
   return (
     <>
-      <div className="mb-4 grid grid-cols-3 gap-3">
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
         <Card className="px-4 py-3">
           <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">Produtos</p>
           <p className="text-lg font-bold tabular-nums text-neutral-900">{active.length}</p>
@@ -84,9 +84,9 @@ export default function ProdutosTab() {
           <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">Repor</p>
           <p className={`text-lg font-bold tabular-nums ${low.length ? 'text-amber-700' : 'text-neutral-900'}`}>{low.length}</p>
         </Card>
-        <Card className="px-4 py-3">
-          <p className="truncate text-xs font-medium uppercase tracking-wide text-neutral-500">Em estoque</p>
-          <p className="truncate text-lg font-bold tabular-nums text-neutral-900">{formatCurrency(stockValue)}</p>
+        <Card className="col-span-2 px-4 py-3 sm:col-span-1">
+          <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">Valor em estoque (custo)</p>
+          <p className="text-lg font-bold tabular-nums text-neutral-900">{formatCurrency(stockValue)}</p>
         </Card>
       </div>
 
@@ -161,8 +161,8 @@ export default function ProdutosTab() {
                             <Badge color={level === 'zerado' ? 'red' : 'yellow'}>{p.stock < 0 ? 'Conferir' : level === 'zerado' ? 'Acabou' : 'Baixo'}</Badge>
                           )}
                         </div>
-                        <Button size="sm" variant="secondary" icon={<PackagePlus size={16} />} onClick={() => setEntry(p)} aria-label={`Entrada de ${p.name}`}>
-                          <span className="hidden sm:inline">Entrada</span>
+                        <Button size="sm" variant="secondary" icon={<PackagePlus size={16} />} onClick={() => setEntry(p)} className="px-2.5">
+                          Entrada
                         </Button>
                         <div className="-mr-2">
                           <Dropdown

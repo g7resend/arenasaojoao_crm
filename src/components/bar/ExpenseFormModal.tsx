@@ -16,7 +16,7 @@ interface Props {
   /** Já abre marcado como saída do caixa (botão "Saída do caixa") */
   fromRegister?: boolean
   onClose: () => void
-  onSaved: () => void
+  onSaved: () => Promise<void>
 }
 
 interface FormState {
@@ -69,10 +69,13 @@ export function ExpenseFormModal({ open, expense, openSessionId, fromRegister = 
     const { error } = expense
       ? await supabase.from('bar_expenses').update(payload).eq('id', expense.id)
       : await supabase.from('bar_expenses').insert(payload)
-    setSaving(false)
-    if (error) return toast('Erro ao salvar a despesa.', 'error')
+    if (error) {
+      setSaving(false)
+      return toast('Erro ao salvar a despesa.', 'error')
+    }
     toast(expense ? 'Despesa atualizada!' : 'Despesa lançada!')
-    onSaved()
+    await onSaved()
+    setSaving(false)
   }
 
   return (
@@ -97,7 +100,7 @@ export function ExpenseFormModal({ open, expense, openSessionId, fromRegister = 
           required
           value={form.description}
           onChange={(e) => set('description', e.target.value)}
-          placeholder={form.fromRegister ? 'Ex.: gelo, troco para o fornecedor' : 'Ex.: 10 fardos de água no atacado'}
+          placeholder={canUseRegister && form.fromRegister ? 'Ex.: gelo, troco para o fornecedor' : 'Ex.: 10 fardos de água no atacado'}
         />
         <div className="grid grid-cols-2 gap-3">
           <MoneyInput label="Valor" required value={form.amount} onChange={(v) => set('amount', v)} />
@@ -107,7 +110,7 @@ export function ExpenseFormModal({ open, expense, openSessionId, fromRegister = 
             ))}
           </Select>
         </div>
-        {canUseRegister && (
+        {canUseRegister && !(fromRegister && !expense) && (
           <div className="rounded-xl bg-neutral-50 px-4 py-3">
             <Toggle label="Paguei com o dinheiro do caixa" checked={form.fromRegister} onChange={(v) => set('fromRegister', v)} />
             <p className="mt-1 text-xs text-neutral-500">Marque se o dinheiro saiu da gaveta do bar. Assim o fechamento do caixa já desconta.</p>
