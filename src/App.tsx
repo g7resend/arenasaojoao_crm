@@ -1,10 +1,11 @@
-import { lazy } from 'react'
+import { Suspense, lazy } from 'react'
 import { HashRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { SettingsProvider } from './hooks/useSettings'
 import { ToastProvider } from './hooks/useToast'
 import { AppShell } from './components/layout/AppShell'
-import { Spinner } from './components/ui/Misc'
+import { Button } from './components/ui/Button'
+import { ErrorBox, Spinner } from './components/ui/Misc'
 import Login from './pages/Login'
 
 // páginas carregadas sob demanda (bundle inicial menor no celular)
@@ -20,12 +21,31 @@ const Bar = lazy(() => import('./pages/Bar'))
 const Horarios = lazy(() => import('./pages/Horarios'))
 const Configuracoes = lazy(() => import('./pages/Configuracoes'))
 const ComoUsar = lazy(() => import('./pages/ComoUsar'))
+const Portaria = lazy(() => import('./pages/Portaria'))
 
 /** Só renderiza as telas internas com usuário logado */
 function ProtectedRoute() {
-  const { session, loading } = useAuth()
+  const { session, loading, role, roleError, retryRole, signOut } = useAuth()
   if (loading) return <Spinner className="min-h-dvh items-center" />
   if (!session) return <Navigate to="/login" replace />
+  if (roleError)
+    return (
+      <div className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-3 px-4">
+        <ErrorBox message="Não foi possível carregar o seu acesso. Verifique a internet." />
+        <Button onClick={retryRole}>Tentar de novo</Button>
+        <Button variant="ghost" onClick={signOut}>
+          Sair
+        </Button>
+      </div>
+    )
+  if (!role) return <Spinner className="min-h-dvh items-center" />
+  // login de portaria só tem esta tela, seja qual for o endereço aberto
+  if (role === 'portaria')
+    return (
+      <Suspense fallback={<Spinner className="min-h-dvh items-center" />}>
+        <Portaria />
+      </Suspense>
+    )
   return (
     <SettingsProvider>
       <Outlet />

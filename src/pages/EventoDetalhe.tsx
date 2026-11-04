@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, CalendarDays, Copy, FileSpreadsheet, FileText, MapPin, Pencil, Plus, Search, Trash2, UserPlus } from 'lucide-react'
+import { ArrowLeft, CalendarDays, ClipboardPaste, Copy, FileSpreadsheet, FileText, MapPin, Pencil, Plus, Search, Trash2, UserPlus } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { formatCurrency, formatDateLong, formatTime, normalizeText } from '../lib/format'
 import { exportCsv, exportPdf, participantsText, sortByName, type ExportContext } from '../lib/export'
@@ -14,15 +14,17 @@ import { Dropdown } from '../components/ui/Dropdown'
 import { EventFormModal } from '../components/events/EventFormModal'
 import { ParticipantFormModal } from '../components/events/ParticipantFormModal'
 import { ParticipantRow } from '../components/events/ParticipantRow'
+import { PasteListModal } from '../components/events/PasteListModal'
 import { CapacityBar } from '../components/events/CapacityBar'
 import ComissariosTab from './evento/ComissariosTab'
 import CardapioTab from './evento/CardapioTab'
+import PortariaTab from './evento/PortariaTab'
 import { deleteEventImage, eventImageUrl } from '../lib/eventImages'
 import type { ArenaEvent, EventLot, EventParticipant, EventSeller } from '../types/db'
 
 type Filter = 'todos' | 'entraram' | 'faltam'
-type Tab = 'pagantes' | 'comissarios' | 'cardapio'
-const TABS: Tab[] = ['pagantes', 'comissarios', 'cardapio']
+type Tab = 'pagantes' | 'comissarios' | 'cardapio' | 'portaria'
+const TABS: Tab[] = ['pagantes', 'comissarios', 'cardapio', 'portaria']
 
 export default function EventoDetalhe() {
   const { id } = useParams<{ id: string }>()
@@ -43,6 +45,7 @@ export default function EventoDetalhe() {
   const [filter, setFilter] = useState<Filter>('todos')
   const [editingEvent, setEditingEvent] = useState(false)
   const [participantForm, setParticipantForm] = useState<{ open: boolean; participant: EventParticipant | null; sellerId?: string | null }>({ open: false, participant: null })
+  const [pasteList, setPasteList] = useState<{ open: boolean; sellerId?: string | null }>({ open: false })
   const [exporting, setExporting] = useState(false)
 
   const load = useCallback(async () => {
@@ -217,6 +220,7 @@ export default function EventoDetalhe() {
             { value: 'pagantes', label: 'Pagantes' },
             { value: 'comissarios', label: 'Comissários' },
             { value: 'cardapio', label: 'Cardápio' },
+            { value: 'portaria', label: 'Portaria' },
           ]}
         />
       </div>
@@ -227,6 +231,9 @@ export default function EventoDetalhe() {
           <div className="mb-4 flex flex-wrap gap-2">
             <Button icon={<UserPlus size={16} />} onClick={() => setParticipantForm({ open: true, participant: null })}>
               Adicionar pagante
+            </Button>
+            <Button variant="secondary" icon={<ClipboardPaste size={16} />} onClick={() => setPasteList({ open: true })}>
+              Colar lista
             </Button>
             <Button variant="secondary" icon={<Copy size={16} />} onClick={handleCopy} disabled={!participants.length}>
               Copiar lista
@@ -296,6 +303,7 @@ export default function EventoDetalhe() {
           participants={participants}
           reload={load}
           onAddParticipant={(sellerId) => setParticipantForm({ open: true, participant: null, sellerId })}
+          onPasteList={(sellerId) => setPasteList({ open: true, sellerId })}
           onEditParticipant={(p) => setParticipantForm({ open: true, participant: p })}
           onToggleCheckIn={toggleCheckIn}
           onRemoveParticipant={removeParticipant}
@@ -303,6 +311,8 @@ export default function EventoDetalhe() {
       )}
 
       {tab === 'cardapio' && <CardapioTab event={event} arenaName={arenaName} />}
+
+      {tab === 'portaria' && <PortariaTab eventId={event.id} />}
 
       <EventFormModal
         open={editingEvent}
@@ -312,6 +322,20 @@ export default function EventoDetalhe() {
         onSaved={() => {
           setEditingEvent(false)
           load()
+        }}
+      />
+      <PasteListModal
+        open={pasteList.open}
+        eventId={event.id}
+        lots={lots}
+        sellers={sellers}
+        defaultSellerId={pasteList.sellerId}
+        participants={participants}
+        remaining={remaining}
+        onClose={() => setPasteList({ open: false })}
+        onSaved={async () => {
+          await load()
+          setPasteList({ open: false })
         }}
       />
       <ParticipantFormModal

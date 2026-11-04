@@ -307,6 +307,18 @@ export const MANUAL: ManualSection[] = [
         tags: 'pagante participante ingresso vender',
       },
       {
+        id: 'colar-lista',
+        q: 'Como adicionar vários pagantes de uma vez?',
+        a: [
+          '1. Copie a lista de nomes (do WhatsApp, por exemplo).',
+          '2. No evento, toque em "Colar lista". Pela aba "Comissários", abra o comissário e use o "Colar lista" dele: ele já vem escolhido.',
+          '3. Cole os nomes, um por linha. Numeração, emojis e telefone são retirados sozinhos.',
+          '4. Confira lote, valor, forma e data, que valem para todos da lista, e toque em "Adicionar".',
+          'Nomes repetidos, ou que já estão no evento, não entram. Se for mesmo outra pessoa com o mesmo nome, use "Adicionar pagante".',
+        ],
+        tags: 'colar lista vários pagantes whatsapp importar nomes comissário',
+      },
+      {
         id: 'excluir-pagante',
         q: 'Como excluir um pagante da lista?',
         a: [
@@ -347,6 +359,18 @@ export const MANUAL: ManualSection[] = [
           'Use as abas "Não entraram" e "Entraram" para acompanhar a portaria.',
         ],
         tags: 'entrada portaria checkin presença lista',
+      },
+      {
+        id: 'portaria',
+        q: 'Como criar o login de quem fica na portaria?',
+        a: [
+          '1. No Supabase, abra Authentication → Users → Add user → Create new user. Coloque e-mail e senha e marque "Auto Confirm User".',
+          '2. No sistema, abra o evento, vá na aba "Portaria", digite esse e-mail e toque em "Liberar este evento".',
+          '3. A pessoa entra no mesmo site com esse login. Ela só vê a lista de nomes dos eventos liberados e marca quem entrou.',
+          'Ela não vê telefone, valores nem nenhuma outra área do sistema.',
+          'O acesso continua até você tirar: na aba "Portaria", toque na lixeira ao lado do e-mail. As marcações de entrada aparecem na lista do evento.',
+        ],
+        tags: 'portaria porteiro login usuário acesso entrada liberar recepção',
       },
       {
         id: 'exportar',

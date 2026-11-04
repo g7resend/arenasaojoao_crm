@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronDown, Pencil, Plus, Trash2, UserPlus, Users } from 'lucide-react'
+import { ChevronDown, ClipboardPaste, Pencil, Plus, Trash2, UserPlus, Users } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { PAYMENT_METHODS, formatCurrency } from '../../lib/format'
 import { sortByName } from '../../lib/export'
@@ -18,6 +18,7 @@ interface Props {
   participants: EventParticipant[]
   reload: () => Promise<void>
   onAddParticipant: (sellerId: string | null) => void
+  onPasteList: (sellerId: string | null) => void
   onEditParticipant: (p: EventParticipant) => void
   onToggleCheckIn: (p: EventParticipant) => void
   onRemoveParticipant: (p: EventParticipant) => void
@@ -26,7 +27,7 @@ interface Props {
 const countLabel = (n: number) => `${n} ingresso${n === 1 ? '' : 's'}`
 const sum = (list: EventParticipant[]) => list.reduce((a, p) => a + Number(p.amount_paid), 0)
 
-export default function ComissariosTab({ eventId, sellers, lots, participants, reload, onAddParticipant, onEditParticipant, onToggleCheckIn, onRemoveParticipant }: Props) {
+export default function ComissariosTab({ eventId, sellers, lots, participants, reload, onAddParticipant, onPasteList, onEditParticipant, onToggleCheckIn, onRemoveParticipant }: Props) {
   const toast = useToast()
   const [expanded, setExpanded] = useState<string | null>(null)
   const [form, setForm] = useState<{ open: boolean; seller: EventSeller | null }>({ open: false, seller: null })
@@ -73,11 +74,16 @@ export default function ComissariosTab({ eventId, sellers, lots, participants, r
         </div>
         {isOpen && (
           <div className="border-t border-neutral-100">
-            <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
-              <p className="text-xs text-neutral-500">{byMethod.map((m) => `${m.label}: ${formatCurrency(m.total)}`).join(' · ')}</p>
-              <Button size="sm" icon={<UserPlus size={16} />} onClick={() => onAddParticipant(sellerId)}>
-                Adicionar pagante
-              </Button>
+            <div className="space-y-2 px-4 py-3">
+              {byMethod.length > 0 && <p className="text-xs text-neutral-500">{byMethod.map((m) => `${m.label}: ${formatCurrency(m.total)}`).join(' · ')}</p>}
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" icon={<UserPlus size={16} />} onClick={() => onAddParticipant(sellerId)}>
+                  Adicionar pagante
+                </Button>
+                <Button size="sm" variant="secondary" icon={<ClipboardPaste size={16} />} onClick={() => onPasteList(sellerId)}>
+                  Colar lista
+                </Button>
+              </div>
             </div>
             {list.length > 0 && (
               <ul className="divide-y divide-neutral-100 border-t border-neutral-100">

@@ -2,9 +2,15 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 
+export type UserRole = 'admin' | 'portaria'
+
 interface AuthContextValue {
   session: Session | null
   loading: boolean
+  /** null enquanto carrega; quem manda de verdade são as regras do banco */
+  role: UserRole | null
+  roleError: boolean
+  retryRole: () => void
   signIn: (email: string, password: string) => Promise<string | null>
   signOut: () => Promise<void>
 }
@@ -22,6 +28,25 @@ function translateAuthError(message: string): string {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [role, setRole] = useState<UserRole | null>(null)
+  const [roleError, setRoleError] = useState(false)
+  const [attempt, setAttempt] = useState(0)
+  const userId = session?.user.id
+
+  useEffect(() => {
+    setRole(null)
+    setRoleError(false)
+    if (!userId) return
+    let active = true
+    supabase.rpc('is_admin').then(({ data, error }) => {
+      if (!active) return
+      if (error) setRoleError(true)
+      else setRole(data ? 'admin' : 'portaria')
+    })
+    return () => {
+      active = false
+    }
+  }, [userId, attempt])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -42,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ session, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ session, loading, role, roleError, retryRole: () => setAttempt((n) => n + 1), signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   )

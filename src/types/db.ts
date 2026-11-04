@@ -146,6 +146,27 @@ export interface EventMenuItem {
   created_at: string
 }
 
+export interface EventGateAccess {
+  event_id: string
+  user_id: string
+  email: string
+  created_at: string
+}
+
+export interface GateEvent {
+  id: string
+  name: string
+  event_date: string
+  start_time: string | null
+  location: string
+}
+
+export interface GateParticipant {
+  id: string
+  name: string
+  checked_in: boolean
+}
+
 export interface BarProduct {
   id: string
   name: string
