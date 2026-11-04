@@ -9,7 +9,7 @@ export function eventImageUrl(path: string | null | undefined): string | null {
   return supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl
 }
 
-function loadImage(file: File): Promise<HTMLImageElement> {
+export function loadImage(file: Blob): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file)
     const img = new Image()

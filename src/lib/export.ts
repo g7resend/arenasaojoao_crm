@@ -1,10 +1,13 @@
-import type { ArenaEvent, EventLot, EventParticipant } from '../types/db'
+import type { ArenaEvent, EventLot, EventMenuItem, EventParticipant, EventSeller } from '../types/db'
+import { eventImageUrl, loadImage } from './eventImages'
 import { PAYMENT_METHODS, formatCurrency, formatDate, formatDateLong, formatPhone, formatTime } from './format'
+import { buildMenuPdf, type MenuLogo } from './menuPdf'
 
 export interface ExportContext {
   arenaName: string
   event: ArenaEvent
   lots: EventLot[]
+  sellers: EventSeller[]
   participants: EventParticipant[]
 }
 
@@ -15,6 +18,10 @@ export function sortByName<T extends { name: string }>(list: T[]): T[] {
 
 function lotName(lots: EventLot[], id: string | null) {
   return lots.find((l) => l.id === id)?.name ?? '—'
+}
+
+function sellerName(sellers: EventSeller[], id: string | null) {
+  return sellers.find((s) => s.id === id)?.name ?? '—'
 }
 
 function slug(s: string) {
@@ -42,14 +49,16 @@ function eventSubtitle(event: ArenaEvent) {
 }
 
 /** CSV com BOM e separador ";" (abre direto no Excel em pt-BR) */
-export function exportCsv({ event, lots, participants }: ExportContext) {
+export function exportCsv({ event, lots, sellers, participants }: ExportContext) {
   const esc = (v: string) => (/[;"\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v)
-  const header = ['Nº', 'Nome', 'Telefone', 'Lote', 'Valor pago', 'Forma de pagamento', 'Data do pagamento', 'Check-in']
+  const hasSellers = sellers.length > 0
+  const header = ['Nº', 'Nome', 'Telefone', 'Lote', ...(hasSellers ? ['Comissário'] : []), 'Valor pago', 'Forma de pagamento', 'Data do pagamento', 'Check-in']
   const rows = sortByName(participants).map((p, i) => [
     String(i + 1),
     p.name,
     p.phone ? formatPhone(p.phone) : '',
     lotName(lots, p.lot_id),
+    ...(hasSellers ? [sellerName(sellers, p.seller_id)] : []),
     Number(p.amount_paid).toFixed(2).replace('.', ','),
     PAYMENT_METHODS[p.payment_method],
     formatDate(p.paid_at),
@@ -60,11 +69,13 @@ export function exportCsv({ event, lots, participants }: ExportContext) {
 }
 
 /** PDF para imprimir, com coluna de check-in em branco para marcar na entrada */
-export async function exportPdf({ arenaName, event, lots, participants }: ExportContext) {
+export async function exportPdf({ arenaName, event, lots, sellers, participants }: ExportContext) {
   const [{ jsPDF }, { default: autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')])
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const sorted = sortByName(participants)
   const total = participants.reduce((a, p) => a + Number(p.amount_paid), 0)
+  const hasSellers = sellers.length > 0
+  const shift = hasSellers ? 1 : 0
 
   doc.setFillColor(10, 10, 10)
   doc.rect(0, 0, 210, 28, 'F')
@@ -84,11 +95,12 @@ export async function exportPdf({ arenaName, event, lots, participants }: Export
 
   autoTable(doc, {
     startY: 41,
-    head: [['Nº', 'Nome', 'Lote', 'Valor', 'Forma', 'Entrada']],
+    head: [['Nº', 'Nome', 'Lote', ...(hasSellers ? ['Comissário'] : []), 'Valor', 'Forma', 'Entrada']],
     body: sorted.map((p, i) => [
       String(i + 1),
       p.name,
       lotName(lots, p.lot_id),
+      ...(hasSellers ? [sellerName(sellers, p.seller_id)] : []),
       formatCurrency(p.amount_paid),
       PAYMENT_METHODS[p.payment_method],
       p.checked_in ? 'X' : '',
@@ -98,8 +110,8 @@ export async function exportPdf({ arenaName, event, lots, participants }: Export
     alternateRowStyles: { fillColor: [245, 245, 245] },
     columnStyles: {
       0: { cellWidth: 10, halign: 'right' },
-      3: { halign: 'right' },
-      5: { cellWidth: 18, halign: 'center', lineWidth: 0.2, lineColor: [180, 180, 180] },
+      [3 + shift]: { halign: 'right' },
+      [5 + shift]: { cellWidth: 18, halign: 'center', lineWidth: 0.2, lineColor: [180, 180, 180] },
     },
     didDrawPage: () => {
       const page = doc.getNumberOfPages()
@@ -110,6 +122,22 @@ export async function exportPdf({ arenaName, event, lots, participants }: Export
   })
 
   doc.save(`pagantes-${slug(event.name)}.pdf`)
+}
+
+async function fetchEventLogo(path: string | null): Promise<MenuLogo | null> {
+  const url = eventImageUrl(path)
+  if (!url) return null
+  const res = await fetch(url)
+  if (!res.ok) throw new Error('Falha ao baixar a imagem do evento')
+  const blob = await res.blob()
+  const img = await loadImage(blob)
+  return { data: new Uint8Array(await blob.arrayBuffer()), width: img.naturalWidth, height: img.naturalHeight }
+}
+
+/** Cardápio em PDF A3 para imprimir, com a imagem do evento no topo */
+export async function exportMenuPdf({ arenaName, event, items }: { arenaName: string; event: ArenaEvent; items: EventMenuItem[] }) {
+  const [{ jsPDF }, logo] = await Promise.all([import('jspdf'), fetchEventLogo(event.image_path)])
+  buildMenuPdf({ JsPDF: jsPDF, title: event.name, arenaName, items, logo }).save(`cardapio-${slug(event.name)}.pdf`)
 }
 
 /** Texto para colar no WhatsApp */

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, CalendarDays, Check, Copy, FileSpreadsheet, FileText, MapPin, Pencil, Plus, Search, Trash2, UserPlus } from 'lucide-react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { ArrowLeft, CalendarDays, Copy, FileSpreadsheet, FileText, MapPin, Pencil, Plus, Search, Trash2, UserPlus } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { PAYMENT_METHODS, formatCurrency, formatDate, formatDateLong, formatTime, normalizeText } from '../lib/format'
+import { formatCurrency, formatDateLong, formatTime, normalizeText } from '../lib/format'
 import { exportCsv, exportPdf, participantsText, sortByName, type ExportContext } from '../lib/export'
 import { copyToClipboard } from '../lib/whatsapp'
 import { useSettings } from '../hooks/useSettings'
@@ -13,37 +13,50 @@ import { Card, EmptyState, ErrorBox, Spinner, Tabs } from '../components/ui/Misc
 import { Dropdown } from '../components/ui/Dropdown'
 import { EventFormModal } from '../components/events/EventFormModal'
 import { ParticipantFormModal } from '../components/events/ParticipantFormModal'
+import { ParticipantRow } from '../components/events/ParticipantRow'
 import { CapacityBar } from '../components/events/CapacityBar'
+import ComissariosTab from './evento/ComissariosTab'
+import CardapioTab from './evento/CardapioTab'
 import { deleteEventImage, eventImageUrl } from '../lib/eventImages'
-import type { ArenaEvent, EventLot, EventParticipant } from '../types/db'
+import type { ArenaEvent, EventLot, EventParticipant, EventSeller } from '../types/db'
 
 type Filter = 'todos' | 'entraram' | 'faltam'
+type Tab = 'pagantes' | 'comissarios' | 'cardapio'
+const TABS: Tab[] = ['pagantes', 'comissarios', 'cardapio']
 
 export default function EventoDetalhe() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { settings } = useSettings()
   const toast = useToast()
+  // a aba fica na URL (#/eventos/id?aba=cardapio), como no Bar
+  const [params, setParams] = useSearchParams()
+  const aba = params.get('aba') as Tab | null
+  const tab: Tab = aba && TABS.includes(aba) ? aba : 'pagantes'
+  const setTab = (t: Tab) => setParams(t === 'pagantes' ? {} : { aba: t }, { replace: true })
   const [event, setEvent] = useState<ArenaEvent | null>(null)
   const [lots, setLots] = useState<EventLot[]>([])
+  const [sellers, setSellers] = useState<EventSeller[]>([])
   const [participants, setParticipants] = useState<EventParticipant[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<Filter>('todos')
   const [editingEvent, setEditingEvent] = useState(false)
-  const [participantForm, setParticipantForm] = useState<{ open: boolean; participant: EventParticipant | null }>({ open: false, participant: null })
+  const [participantForm, setParticipantForm] = useState<{ open: boolean; participant: EventParticipant | null; sellerId?: string | null }>({ open: false, participant: null })
   const [exporting, setExporting] = useState(false)
 
   const load = useCallback(async () => {
     if (!id) return
-    const [e, l, p] = await Promise.all([
+    const [e, l, s, p] = await Promise.all([
       supabase.from('events').select('*').eq('id', id).maybeSingle(),
       supabase.from('event_lots').select('*').eq('event_id', id).order('sort_order'),
+      supabase.from('event_sellers').select('*').eq('event_id', id),
       supabase.from('event_participants').select('*').eq('event_id', id),
     ])
-    if (e.error || l.error || p.error) toast('Erro ao carregar evento.', 'error')
+    if (e.error || l.error || s.error || p.error) toast('Erro ao carregar evento.', 'error')
     setEvent((e.data as ArenaEvent) ?? null)
     setLots((l.data as EventLot[]) ?? [])
+    setSellers((s.data as EventSeller[]) ?? [])
     setParticipants((p.data as EventParticipant[]) ?? [])
     setLoading(false)
   }, [id, toast])
@@ -77,7 +90,9 @@ export default function EventoDetalhe() {
   const checkedIn = participants.filter((p) => p.checked_in).length
   const remaining = event.capacity ? event.capacity - participants.length : null
   const lotName = (lotId: string | null) => lots.find((l) => l.id === lotId)?.name
-  const ctx: ExportContext = { arenaName: settings?.arena_name ?? 'Arena São João', event, lots, participants }
+  const sellerName = (sellerId: string | null) => sellers.find((s) => s.id === sellerId)?.name
+  const arenaName = settings?.arena_name ?? 'Arena São João'
+  const ctx: ExportContext = { arenaName, event, lots, sellers, participants }
 
   async function toggleCheckIn(p: EventParticipant) {
     const checked_in = !p.checked_in
@@ -92,10 +107,10 @@ export default function EventoDetalhe() {
   }
 
   async function removeParticipant(p: EventParticipant) {
-    if (!confirm(`Remover ${p.name} da lista?`)) return
+    if (!confirm(`Excluir ${p.name} da lista de pagantes?`)) return
     const { error } = await supabase.from('event_participants').delete().eq('id', p.id)
-    if (error) return toast('Erro ao remover participante.', 'error')
-    toast('Participante removido.')
+    if (error) return toast('Erro ao excluir pagante.', 'error')
+    toast('Pagante excluído.')
     load()
   }
 
@@ -194,85 +209,100 @@ export default function EventoDetalhe() {
         )}
       </Card>
 
-      {/* Ações */}
-      <div className="mb-4 flex flex-wrap gap-2">
-        <Button icon={<UserPlus size={16} />} onClick={() => setParticipantForm({ open: true, participant: null })}>
-          Adicionar pagante
-        </Button>
-        <Button variant="secondary" icon={<Copy size={16} />} onClick={handleCopy} disabled={!participants.length}>
-          Copiar lista
-        </Button>
-        <Button variant="secondary" icon={<FileSpreadsheet size={16} />} onClick={() => exportCsv(ctx)} disabled={!participants.length}>
-          Excel (CSV)
-        </Button>
-        <Button variant="secondary" icon={<FileText size={16} />} onClick={handlePdf} loading={exporting} disabled={!participants.length}>
-          PDF
-        </Button>
-      </div>
-
-      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-4">
         <Tabs
-          value={filter}
-          onChange={setFilter}
+          value={tab}
+          onChange={setTab}
           tabs={[
-            { value: 'todos', label: 'Todos', count: participants.length },
-            { value: 'faltam', label: 'Não entraram', count: participants.length - checkedIn },
-            { value: 'entraram', label: 'Entraram', count: checkedIn },
+            { value: 'pagantes', label: 'Pagantes' },
+            { value: 'comissarios', label: 'Comissários' },
+            { value: 'cardapio', label: 'Cardápio' },
           ]}
         />
-        <div className="relative sm:w-64">
-          <Search size={16} className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-neutral-400" />
-          <Input placeholder="Buscar por nome" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
-        </div>
       </div>
 
-      <Card>
-        {participants.length === 0 ? (
-          <EmptyState
-            icon={<UserPlus size={40} />}
-            title="Nenhum pagante ainda"
-            description="Adicione as pessoas que já pagaram o ingresso."
-            action={
-              <Button icon={<Plus size={16} />} onClick={() => setParticipantForm({ open: true, participant: null })}>
-                Adicionar pagante
-              </Button>
-            }
-          />
-        ) : visible.length === 0 ? (
-          <EmptyState icon={<Search size={40} />} title="Ninguém encontrado" />
-        ) : (
-          <ul className="divide-y divide-neutral-100">
-            {visible.map((p) => (
-              <li key={p.id} className={`flex items-center gap-3 px-3 py-2.5 ${p.checked_in ? 'bg-emerald-50/50' : ''}`}>
-                <button
-                  type="button"
-                  role="checkbox"
-                  aria-checked={p.checked_in}
-                  aria-label={`Check-in de ${p.name}`}
-                  onClick={() => toggleCheckIn(p)}
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 transition-colors ${
-                    p.checked_in ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-neutral-300 bg-white text-transparent hover:border-emerald-500'
-                  }`}
-                >
-                  <Check size={22} strokeWidth={3} />
-                </button>
-                <div className="min-w-0 flex-1">
-                  <p className={`truncate font-medium ${p.checked_in ? 'text-emerald-800' : 'text-neutral-900'}`}>{p.name}</p>
-                  <p className="truncate text-xs text-neutral-500">
-                    {[lotName(p.lot_id), formatCurrency(p.amount_paid), PAYMENT_METHODS[p.payment_method], formatDate(p.paid_at)].filter(Boolean).join(' · ')}
-                  </p>
-                </div>
-                <Dropdown
-                  items={[
-                    { label: 'Editar', icon: <Pencil size={16} />, onClick: () => setParticipantForm({ open: true, participant: p }) },
-                    { label: 'Remover', icon: <Trash2 size={16} />, onClick: () => removeParticipant(p), danger: true },
-                  ]}
-                />
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
+      {tab === 'pagantes' && (
+        <>
+          {/* Ações */}
+          <div className="mb-4 flex flex-wrap gap-2">
+            <Button icon={<UserPlus size={16} />} onClick={() => setParticipantForm({ open: true, participant: null })}>
+              Adicionar pagante
+            </Button>
+            <Button variant="secondary" icon={<Copy size={16} />} onClick={handleCopy} disabled={!participants.length}>
+              Copiar lista
+            </Button>
+            <Button variant="secondary" icon={<FileSpreadsheet size={16} />} onClick={() => exportCsv(ctx)} disabled={!participants.length}>
+              Excel (CSV)
+            </Button>
+            <Button variant="secondary" icon={<FileText size={16} />} onClick={handlePdf} loading={exporting} disabled={!participants.length}>
+              PDF
+            </Button>
+          </div>
+
+          <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <Tabs
+              value={filter}
+              onChange={setFilter}
+              tabs={[
+                { value: 'todos', label: 'Todos', count: participants.length },
+                { value: 'faltam', label: 'Não entraram', count: participants.length - checkedIn },
+                { value: 'entraram', label: 'Entraram', count: checkedIn },
+              ]}
+            />
+            <div className="relative sm:w-64">
+              <Search size={16} className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-neutral-400" />
+              <Input placeholder="Buscar por nome" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+            </div>
+          </div>
+
+          <Card>
+            {participants.length === 0 ? (
+              <EmptyState
+                icon={<UserPlus size={40} />}
+                title="Nenhum pagante ainda"
+                description="Adicione as pessoas que já pagaram o ingresso."
+                action={
+                  <Button icon={<Plus size={16} />} onClick={() => setParticipantForm({ open: true, participant: null })}>
+                    Adicionar pagante
+                  </Button>
+                }
+              />
+            ) : visible.length === 0 ? (
+              <EmptyState icon={<Search size={40} />} title="Ninguém encontrado" />
+            ) : (
+              <ul className="divide-y divide-neutral-100">
+                {visible.map((p) => (
+                  <ParticipantRow
+                    key={p.id}
+                    participant={p}
+                    lotName={lotName(p.lot_id)}
+                    sellerName={sellerName(p.seller_id)}
+                    onToggleCheckIn={() => toggleCheckIn(p)}
+                    onEdit={() => setParticipantForm({ open: true, participant: p })}
+                    onRemove={() => removeParticipant(p)}
+                  />
+                ))}
+              </ul>
+            )}
+          </Card>
+        </>
+      )}
+
+      {tab === 'comissarios' && (
+        <ComissariosTab
+          eventId={event.id}
+          sellers={sellers}
+          lots={lots}
+          participants={participants}
+          reload={load}
+          onAddParticipant={(sellerId) => setParticipantForm({ open: true, participant: null, sellerId })}
+          onEditParticipant={(p) => setParticipantForm({ open: true, participant: p })}
+          onToggleCheckIn={toggleCheckIn}
+          onRemoveParticipant={removeParticipant}
+        />
+      )}
+
+      {tab === 'cardapio' && <CardapioTab event={event} arenaName={arenaName} />}
 
       <EventFormModal
         open={editingEvent}
@@ -289,6 +319,8 @@ export default function EventoDetalhe() {
         eventId={event.id}
         participant={participantForm.participant}
         lots={lots}
+        sellers={sellers}
+        defaultSellerId={participantForm.sellerId}
         remaining={remaining}
         onClose={() => setParticipantForm({ open: false, participant: null })}
         onSaved={(keepOpen) => {

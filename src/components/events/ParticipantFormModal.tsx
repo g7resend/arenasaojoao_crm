@@ -1,17 +1,21 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { supabase } from '../../lib/supabase'
 import { PAYMENT_METHODS, formatCurrency, isValidPhone, moneyToInput, parseMoney, todayISO } from '../../lib/format'
+import { sortByName } from '../../lib/export'
 import { useToast } from '../../hooks/useToast'
 import { Button } from '../ui/Button'
 import { Input, MoneyInput, PhoneInput, Select } from '../ui/Field'
 import { Modal } from '../ui/Modal'
-import type { EventLot, EventParticipant, PaymentMethod } from '../../types/db'
+import type { EventLot, EventParticipant, EventSeller, PaymentMethod } from '../../types/db'
 
 interface Props {
   open: boolean
   eventId: string
   participant?: EventParticipant | null
   lots: EventLot[]
+  sellers: EventSeller[]
+  /** comissário já escolhido ao adicionar pela lista dele */
+  defaultSellerId?: string | null
   /** vagas restantes (null = sem limite), usado para avisar quando lotar */
   remaining: number | null
   onClose: () => void
@@ -22,32 +26,34 @@ interface FormState {
   name: string
   phone: string
   lotId: string
+  sellerId: string
   amount: string
   method: PaymentMethod
   paidAt: string
 }
 
-function initial(lots: EventLot[], p?: EventParticipant | null): FormState {
+function initial(lots: EventLot[], p?: EventParticipant | null, defaultSellerId?: string | null): FormState {
   const lot = lots[0]
   return {
     name: p?.name ?? '',
     phone: p?.phone ?? '',
     lotId: p ? (p.lot_id ?? '') : (lot?.id ?? ''),
+    sellerId: (p ? p.seller_id : defaultSellerId) ?? '',
     amount: p ? moneyToInput(p.amount_paid) : moneyToInput(lot?.price),
     method: p?.payment_method ?? 'pix',
     paidAt: p?.paid_at ?? todayISO(),
   }
 }
 
-export function ParticipantFormModal({ open, eventId, participant, lots, remaining, onClose, onSaved }: Props) {
+export function ParticipantFormModal({ open, eventId, participant, lots, sellers, defaultSellerId, remaining, onClose, onSaved }: Props) {
   const toast = useToast()
-  const [form, setForm] = useState<FormState>(() => initial(lots, participant))
+  const [form, setForm] = useState<FormState>(() => initial(lots, participant, defaultSellerId))
   const [phoneError, setPhoneError] = useState<string>()
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (open) {
-      setForm(initial(lots, participant))
+      setForm(initial(lots, participant, defaultSellerId))
       setPhoneError(undefined)
     }
   }, [open])
@@ -68,6 +74,7 @@ export function ParticipantFormModal({ open, eventId, participant, lots, remaini
       name: form.name.trim(),
       phone: form.phone || null,
       lot_id: form.lotId || null,
+      seller_id: form.sellerId || null,
       amount_paid: parseMoney(form.amount),
       payment_method: form.method,
       paid_at: form.paidAt,
@@ -79,7 +86,7 @@ export function ParticipantFormModal({ open, eventId, participant, lots, remaini
     if (error) return toast('Erro ao salvar participante.', 'error')
     toast(participant ? 'Participante atualizado!' : `${form.name.trim()} adicionado!`)
     if (keepOpen) {
-      // mantém lote/forma/data para agilizar o próximo cadastro
+      // mantém lote/comissário/forma/data para agilizar o próximo cadastro
       setForm((f) => ({ ...f, name: '', phone: '' }))
     }
     onSaved(keepOpen)
@@ -127,6 +134,16 @@ export function ParticipantFormModal({ open, eventId, participant, lots, remaini
           }}
           error={phoneError}
         />
+        {sellers.length > 0 && (
+          <Select label="Comissário" value={form.sellerId} onChange={(e) => set('sellerId', e.target.value)}>
+            <option value="">Sem comissário</option>
+            {sortByName(sellers).map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </Select>
+        )}
         <Select
           label="Lote"
           value={form.lotId}

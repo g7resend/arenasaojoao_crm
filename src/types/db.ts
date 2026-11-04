@@ -118,6 +118,7 @@ export interface EventParticipant {
   id: string
   event_id: string
   lot_id: string | null
+  seller_id: string | null
   name: string
   phone: string | null
   payment_method: PaymentMethod
@@ -125,6 +126,23 @@ export interface EventParticipant {
   paid_at: string
   checked_in: boolean
   checked_in_at: string | null
+  created_at: string
+}
+
+export interface EventSeller {
+  id: string
+  event_id: string
+  name: string
+  created_at: string
+}
+
+export interface EventMenuItem {
+  id: string
+  event_id: string
+  name: string
+  description: string
+  price: number
+  sort_order: number
   created_at: string
 }
 

@@ -307,6 +307,39 @@ export const MANUAL: ManualSection[] = [
         tags: 'pagante participante ingresso vender',
       },
       {
+        id: 'excluir-pagante',
+        q: 'Como excluir um pagante da lista?',
+        a: [
+          'Na lista de pagantes, toque na lixeira vermelha ao lado do nome e confirme.',
+          'O lápis ao lado da lixeira serve para corrigir os dados da pessoa.',
+          'O valor pago sai do total arrecadado e das vendas do comissário.',
+        ],
+        tags: 'excluir remover apagar tirar pagante participante lixeira',
+      },
+      {
+        id: 'comissarios',
+        q: 'Como controlar o que cada comissário vendeu?',
+        a: [
+          '1. Abra o evento, vá na aba "Comissários" e toque em "Novo comissário".',
+          '2. Toque no nome do comissário para abrir a lista dele e use "Adicionar pagante". Com "Salvar e próximo" o comissário continua escolhido.',
+          '3. Cada comissário mostra quantos ingressos vendeu e o valor total, separado por forma de pagamento.',
+          'Todos os pagantes entram juntos na lista total, na aba "Pagantes". Lá, ao adicionar ou editar, dá para escolher o comissário no campo "Comissário".',
+          'Quem foi vendido sem comissário aparece em "Sem comissário". Excluir um comissário não apaga os pagantes dele: eles passam para "Sem comissário".',
+        ],
+        tags: 'comissário comissarios vendedor vendas ingresso promoter lista total',
+      },
+      {
+        id: 'cardapio',
+        q: 'Como fazer o cardápio do evento?',
+        a: [
+          '1. Abra o evento, vá na aba "Cardápio" e toque em "Adicionar produto".',
+          '2. Preencha produto, descrição (opcional) e preço. Use as setas para mudar a ordem.',
+          '3. Toque em "Gerar PDF (A3)" e imprima em folha A3.',
+          'A imagem do evento sai no topo do cardápio. Para colocar ou trocar, use "Editar evento". O tamanho da letra se ajusta sozinho à quantidade de produtos.',
+        ],
+        tags: 'cardápio cardapio menu preços produtos imprimir pdf a3 logo',
+      },
+      {
         id: 'check-in',
         q: 'Como fazer o check-in na entrada?',
         a: [
@@ -323,6 +356,7 @@ export const MANUAL: ManualSection[] = [
           '1. "Copiar lista": texto pronto para colar no WhatsApp.',
           '2. "Excel (CSV)": planilha que abre no Excel.',
           '3. "PDF": lista para imprimir, com uma coluna "Entrada" para marcar à mão.',
+          'Se o evento tiver comissários, a planilha e o PDF trazem também o comissário de cada pagante.',
         ],
         tags: 'exportar imprimir pdf excel planilha copiar lista',
       },
