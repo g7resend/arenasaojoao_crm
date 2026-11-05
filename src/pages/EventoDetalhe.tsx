@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, CalendarDays, ClipboardPaste, Copy, FileSpreadsheet, FileText, MapPin, Pencil, Plus, Search, Trash2, UserPlus } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { formatCurrency, formatDateLong, formatTime, normalizeText } from '../lib/format'
-import { exportCsv, exportPdf, participantsText, sortByName, type ExportContext } from '../lib/export'
+import { exportCsv, exportPdf, listCounts, participantsText, sortByName, type ExportContext } from '../lib/export'
 import { copyToClipboard } from '../lib/whatsapp'
 import { useSettings } from '../hooks/useSettings'
 import { useToast } from '../hooks/useToast'
@@ -20,7 +20,7 @@ import ComissariosTab from './evento/ComissariosTab'
 import CardapioTab from './evento/CardapioTab'
 import PortariaTab from './evento/PortariaTab'
 import { deleteEventImage, eventImageUrl } from '../lib/eventImages'
-import type { ArenaEvent, EventLot, EventParticipant, EventSeller } from '../types/db'
+import type { ArenaEvent, EventLot, EventParticipant, EventSeller, ListType } from '../types/db'
 
 type Filter = 'todos' | 'entraram' | 'faltam'
 type Tab = 'pagantes' | 'comissarios' | 'cardapio' | 'portaria'
@@ -44,8 +44,8 @@ export default function EventoDetalhe() {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<Filter>('todos')
   const [editingEvent, setEditingEvent] = useState(false)
-  const [participantForm, setParticipantForm] = useState<{ open: boolean; participant: EventParticipant | null; sellerId?: string | null }>({ open: false, participant: null })
-  const [pasteList, setPasteList] = useState<{ open: boolean; sellerId?: string | null }>({ open: false })
+  const [participantForm, setParticipantForm] = useState<{ open: boolean; participant: EventParticipant | null; sellerId?: string | null; listType?: ListType }>({ open: false, participant: null })
+  const [pasteList, setPasteList] = useState<{ open: boolean; sellerId?: string | null; listType?: ListType }>({ open: false })
   const [exporting, setExporting] = useState(false)
 
   const load = useCallback(async () => {
@@ -94,6 +94,8 @@ export default function EventoDetalhe() {
   const remaining = event.capacity ? event.capacity - participants.length : null
   const lotName = (lotId: string | null) => lots.find((l) => l.id === lotId)?.name
   const sellerName = (sellerId: string | null) => sellers.find((s) => s.id === sellerId)?.name
+  const counts = listCounts(participants)
+  const hasFree = counts[0].count < participants.length
   const arenaName = settings?.arena_name ?? 'Arena São João'
   const ctx: ExportContext = { arenaName, event, lots, sellers, participants }
 
@@ -110,16 +112,16 @@ export default function EventoDetalhe() {
   }
 
   async function removeParticipant(p: EventParticipant) {
-    if (!confirm(`Excluir ${p.name} da lista de pagantes?`)) return
+    if (!confirm(`Excluir ${p.name} da lista?`)) return
     const { error } = await supabase.from('event_participants').delete().eq('id', p.id)
-    if (error) return toast('Erro ao excluir pagante.', 'error')
-    toast('Pagante excluído.')
+    if (error) return toast('Erro ao excluir o nome.', 'error')
+    toast('Nome excluído.')
     load()
   }
 
   async function deleteEvent() {
     if (!event) return
-    if (!confirm(`Excluir o evento "${event.name}" e toda a lista de ${participants.length} pagante(s)?`)) return
+    if (!confirm(`Excluir o evento "${event.name}" e toda a lista de ${participants.length} nome(s)?`)) return
     const { error } = await supabase.from('events').delete().eq('id', event.id)
     if (error) return toast('Erro ao excluir evento.', 'error')
     await deleteEventImage(event.image_path)
@@ -174,7 +176,7 @@ export default function EventoDetalhe() {
 
         <div className="grid grid-cols-3 divide-x divide-neutral-100">
           <div className="px-4 py-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">Pagantes</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">Na lista</p>
             <p className="text-lg font-bold tabular-nums text-neutral-900">
               {participants.length}
               {event.capacity && <span className="text-sm font-medium text-neutral-400"> / {event.capacity}</span>}
@@ -198,8 +200,14 @@ export default function EventoDetalhe() {
             <p className="mt-1 text-xs text-neutral-500">{remaining! > 0 ? `${remaining} vaga${remaining === 1 ? '' : 's'} restante${remaining === 1 ? '' : 's'}` : 'Lotado'}</p>
           </div>
         )}
-        {lots.length > 0 && (
+        {(hasFree || lots.length > 0) && (
           <div className="flex flex-wrap gap-2 border-t border-neutral-100 px-4 py-3">
+            {hasFree &&
+              counts.map((c) => (
+                <span key={c.label} className="rounded-lg bg-neutral-100 px-2.5 py-1 text-xs text-neutral-600">
+                  <strong className="text-neutral-800">{c.label}</strong> · {c.count}
+                </span>
+              ))}
             {lots.map((l) => {
               const n = participants.filter((p) => p.lot_id === l.id).length
               return (
@@ -217,8 +225,8 @@ export default function EventoDetalhe() {
           value={tab}
           onChange={setTab}
           tabs={[
-            { value: 'pagantes', label: 'Pagantes' },
-            { value: 'comissarios', label: 'Comissários' },
+            { value: 'pagantes', label: 'Lista final' },
+            { value: 'comissarios', label: 'Listas' },
             { value: 'cardapio', label: 'Cardápio' },
             { value: 'portaria', label: 'Portaria' },
           ]}
@@ -266,8 +274,8 @@ export default function EventoDetalhe() {
             {participants.length === 0 ? (
               <EmptyState
                 icon={<UserPlus size={40} />}
-                title="Nenhum pagante ainda"
-                description="Adicione as pessoas que já pagaram o ingresso."
+                title="Ninguém na lista ainda"
+                description="Adicione quem já pagou o ingresso. Cortesias e Divulgação ficam na aba Listas."
                 action={
                   <Button icon={<Plus size={16} />} onClick={() => setParticipantForm({ open: true, participant: null })}>
                     Adicionar pagante
@@ -302,8 +310,8 @@ export default function EventoDetalhe() {
           lots={lots}
           participants={participants}
           reload={load}
-          onAddParticipant={(sellerId) => setParticipantForm({ open: true, participant: null, sellerId })}
-          onPasteList={(sellerId) => setPasteList({ open: true, sellerId })}
+          onAddParticipant={(sellerId, listType) => setParticipantForm({ open: true, participant: null, sellerId, listType })}
+          onPasteList={(sellerId, listType) => setPasteList({ open: true, sellerId, listType })}
           onEditParticipant={(p) => setParticipantForm({ open: true, participant: p })}
           onToggleCheckIn={toggleCheckIn}
           onRemoveParticipant={removeParticipant}
@@ -330,6 +338,7 @@ export default function EventoDetalhe() {
         lots={lots}
         sellers={sellers}
         defaultSellerId={pasteList.sellerId}
+        defaultListType={pasteList.listType}
         participants={participants}
         remaining={remaining}
         onClose={() => setPasteList({ open: false })}
@@ -345,6 +354,7 @@ export default function EventoDetalhe() {
         lots={lots}
         sellers={sellers}
         defaultSellerId={participantForm.sellerId}
+        defaultListType={participantForm.listType}
         remaining={remaining}
         onClose={() => setParticipantForm({ open: false, participant: null })}
         onSaved={(keepOpen) => {

@@ -105,7 +105,7 @@ export default function Eventos() {
                     <div className="flex items-center justify-between text-sm">
                       <span className="flex items-center gap-1.5 font-medium text-neutral-700">
                         <Users size={15} /> {s.count}
-                        {ev.capacity ? ` / ${ev.capacity}` : ''} pagantes
+                        {ev.capacity ? ` / ${ev.capacity}` : ''} na lista
                       </span>
                       <span className="font-semibold tabular-nums text-emerald-700">{formatCurrency(s.total)}</span>
                     </div>

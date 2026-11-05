@@ -1,4 +1,5 @@
 export type PaymentMethod = 'pix' | 'dinheiro' | 'cartao'
+export type ListType = 'pagante' | 'cortesia' | 'divulgacao'
 export type StudentStatus = 'ativo' | 'inativo'
 export type PaymentStatus = 'pendente' | 'pago'
 export type ComputedPaymentStatus = 'pendente' | 'pago' | 'atrasado'
@@ -119,6 +120,7 @@ export interface EventParticipant {
   event_id: string
   lot_id: string | null
   seller_id: string | null
+  list_type: ListType
   name: string
   phone: string | null
   payment_method: PaymentMethod

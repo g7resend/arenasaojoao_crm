@@ -1,5 +1,5 @@
 import { Check, Pencil, Trash2 } from 'lucide-react'
-import { PAYMENT_METHODS, formatCurrency, formatDate } from '../../lib/format'
+import { LIST_TYPES, PAYMENT_METHODS, formatCurrency, formatDate } from '../../lib/format'
 import { IconButton } from '../ui/Button'
 import type { EventParticipant } from '../../types/db'
 
@@ -12,7 +12,7 @@ interface Props {
   onRemove: () => void
 }
 
-/** Linha da lista de pagantes: check-in, dados e ações de editar/excluir */
+/** Linha de uma lista do evento: check-in, dados e ações de editar/excluir */
 export function ParticipantRow({ participant: p, lotName, sellerName, onToggleCheckIn, onEdit, onRemove }: Props) {
   return (
     <li className={`flex items-center gap-3 px-3 py-2.5 ${p.checked_in ? 'bg-emerald-50/50' : ''}`}>
@@ -31,7 +31,9 @@ export function ParticipantRow({ participant: p, lotName, sellerName, onToggleCh
       <div className="min-w-0 flex-1">
         <p className={`break-words font-medium ${p.checked_in ? 'text-emerald-800' : 'text-neutral-900'}`}>{p.name}</p>
         <p className="text-xs text-neutral-500">
-          {[lotName, formatCurrency(p.amount_paid), PAYMENT_METHODS[p.payment_method], formatDate(p.paid_at), sellerName && `Comissário: ${sellerName}`].filter(Boolean).join(' · ')}
+          {p.list_type === 'pagante'
+            ? [lotName, formatCurrency(p.amount_paid), PAYMENT_METHODS[p.payment_method], formatDate(p.paid_at), sellerName && `Comissário: ${sellerName}`].filter(Boolean).join(' · ')
+            : LIST_TYPES[p.list_type]}
         </p>
       </div>
       <IconButton label={`Editar ${p.name}`} onClick={onEdit}>

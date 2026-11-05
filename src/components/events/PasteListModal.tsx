@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { supabase } from '../../lib/supabase'
-import { PAYMENT_METHODS, formatCurrency, moneyToInput, parseMoney, todayISO } from '../../lib/format'
+import { LIST_TYPES, PAYMENT_METHODS, formatCurrency, moneyToInput, parseMoney, todayISO } from '../../lib/format'
 import { sortByName } from '../../lib/export'
 import { parseNames } from '../../lib/pasteList'
 import { useToast } from '../../hooks/useToast'
 import { Button } from '../ui/Button'
 import { Input, MoneyInput, Select, Textarea } from '../ui/Field'
 import { Modal } from '../ui/Modal'
-import type { EventLot, EventParticipant, EventSeller, PaymentMethod } from '../../types/db'
+import type { EventLot, EventParticipant, EventSeller, ListType, PaymentMethod } from '../../types/db'
 
 interface Props {
   open: boolean
@@ -16,6 +16,8 @@ interface Props {
   sellers: EventSeller[]
   /** comissário já escolhido ao colar pela lista dele */
   defaultSellerId?: string | null
+  /** lista já escolhida ao colar por Cortesias ou Divulgação */
+  defaultListType?: ListType
   participants: EventParticipant[]
   /** vagas restantes (null = sem limite), usado para avisar quando lotar */
   remaining: number | null
@@ -23,9 +25,10 @@ interface Props {
   onSaved: () => Promise<void>
 }
 
-export function PasteListModal({ open, eventId, lots, sellers, defaultSellerId, participants, remaining, onClose, onSaved }: Props) {
+export function PasteListModal({ open, eventId, lots, sellers, defaultSellerId, defaultListType, participants, remaining, onClose, onSaved }: Props) {
   const toast = useToast()
   const [text, setText] = useState('')
+  const [listType, setListType] = useState<ListType>('pagante')
   const [sellerId, setSellerId] = useState('')
   const [lotId, setLotId] = useState('')
   const [amount, setAmount] = useState('')
@@ -36,6 +39,7 @@ export function PasteListModal({ open, eventId, lots, sellers, defaultSellerId, 
   useEffect(() => {
     if (!open) return
     setText('')
+    setListType(defaultListType ?? 'pagante')
     setSellerId(defaultSellerId ?? '')
     setLotId(lots[0]?.id ?? '')
     setAmount(moneyToInput(lots[0]?.price))
@@ -43,6 +47,7 @@ export function PasteListModal({ open, eventId, lots, sellers, defaultSellerId, 
     setPaidAt(todayISO())
   }, [open])
 
+  const paid = listType === 'pagante'
   const { names, repeated } = useMemo(() => parseNames(text, participants.map((p) => p.name)), [text, participants])
 
   async function handleSubmit(e: FormEvent) {
@@ -55,9 +60,10 @@ export function PasteListModal({ open, eventId, lots, sellers, defaultSellerId, 
       names.map((name) => ({
         event_id: eventId,
         name,
-        lot_id: lotId || null,
-        seller_id: sellerId || null,
-        amount_paid: parseMoney(amount),
+        list_type: listType,
+        lot_id: paid ? lotId || null : null,
+        seller_id: paid ? sellerId || null : null,
+        amount_paid: paid ? parseMoney(amount) : 0,
         payment_method: method,
         paid_at: paidAt,
       })),
@@ -66,7 +72,7 @@ export function PasteListModal({ open, eventId, lots, sellers, defaultSellerId, 
       setSaving(false)
       return toast('Erro ao salvar a lista.', 'error')
     }
-    toast(`${names.length} pagante${names.length === 1 ? '' : 's'} adicionado${names.length === 1 ? '' : 's'}!`)
+    toast(`${names.length} nome${names.length === 1 ? '' : 's'} adicionado${names.length === 1 ? '' : 's'}!`)
     await onSaved()
     setSaving(false)
   }
@@ -75,7 +81,7 @@ export function PasteListModal({ open, eventId, lots, sellers, defaultSellerId, 
     <Modal
       open={open}
       onClose={onClose}
-      title="Colar lista de pagantes"
+      title={`Colar lista: ${paid ? 'Pagantes' : LIST_TYPES[listType]}`}
       footer={
         <>
           <Button variant="secondary" full onClick={onClose}>
@@ -113,7 +119,14 @@ export function PasteListModal({ open, eventId, lots, sellers, defaultSellerId, 
             )}
           </div>
         )}
-        {sellers.length > 0 && (
+        <Select label="Lista" value={listType} onChange={(e) => setListType(e.target.value as ListType)}>
+          {Object.entries(LIST_TYPES).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </Select>
+        {paid && sellers.length > 0 && (
           <Select label="Comissário" value={sellerId} onChange={(e) => setSellerId(e.target.value)}>
             <option value="">Sem comissário</option>
             {sortByName(sellers).map((s) => (
@@ -123,33 +136,37 @@ export function PasteListModal({ open, eventId, lots, sellers, defaultSellerId, 
             ))}
           </Select>
         )}
-        <Select
-          label="Lote"
-          value={lotId}
-          onChange={(e) => {
-            const lot = lots.find((l) => l.id === e.target.value)
-            setLotId(e.target.value)
-            if (lot) setAmount(moneyToInput(lot.price))
-          }}
-        >
-          <option value="">Sem lote</option>
-          {lots.map((l) => (
-            <option key={l.id} value={l.id}>
-              {l.name} — {formatCurrency(l.price)}
-            </option>
-          ))}
-        </Select>
-        <div className="grid grid-cols-2 gap-3">
-          <MoneyInput label="Valor pago (cada)" required value={amount} onChange={setAmount} />
-          <Select label="Forma" value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)}>
-            {Object.entries(PAYMENT_METHODS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </Select>
-        </div>
-        <Input label="Data do pagamento" type="date" required value={paidAt} onChange={(e) => setPaidAt(e.target.value)} />
+        {paid && (
+          <>
+            <Select
+              label="Lote"
+              value={lotId}
+              onChange={(e) => {
+                const lot = lots.find((l) => l.id === e.target.value)
+                setLotId(e.target.value)
+                if (lot) setAmount(moneyToInput(lot.price))
+              }}
+            >
+              <option value="">Sem lote</option>
+              {lots.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name} — {formatCurrency(l.price)}
+                </option>
+              ))}
+            </Select>
+            <div className="grid grid-cols-2 gap-3">
+              <MoneyInput label="Valor pago (cada)" required value={amount} onChange={setAmount} />
+              <Select label="Forma" value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)}>
+                {Object.entries(PAYMENT_METHODS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <Input label="Data do pagamento" type="date" required value={paidAt} onChange={(e) => setPaidAt(e.target.value)} />
+          </>
+        )}
       </form>
     </Modal>
   )

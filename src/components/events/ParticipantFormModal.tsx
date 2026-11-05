@@ -1,12 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { supabase } from '../../lib/supabase'
-import { PAYMENT_METHODS, formatCurrency, isValidPhone, moneyToInput, parseMoney, todayISO } from '../../lib/format'
+import { LIST_TYPES, PAYMENT_METHODS, formatCurrency, isValidPhone, moneyToInput, parseMoney, todayISO } from '../../lib/format'
 import { sortByName } from '../../lib/export'
 import { useToast } from '../../hooks/useToast'
 import { Button } from '../ui/Button'
 import { Input, MoneyInput, PhoneInput, Select } from '../ui/Field'
 import { Modal } from '../ui/Modal'
-import type { EventLot, EventParticipant, EventSeller, PaymentMethod } from '../../types/db'
+import type { EventLot, EventParticipant, EventSeller, ListType, PaymentMethod } from '../../types/db'
 
 interface Props {
   open: boolean
@@ -16,6 +16,8 @@ interface Props {
   sellers: EventSeller[]
   /** comissário já escolhido ao adicionar pela lista dele */
   defaultSellerId?: string | null
+  /** lista já escolhida ao adicionar por Cortesias ou Divulgação */
+  defaultListType?: ListType
   /** vagas restantes (null = sem limite), usado para avisar quando lotar */
   remaining: number | null
   onClose: () => void
@@ -25,6 +27,7 @@ interface Props {
 interface FormState {
   name: string
   phone: string
+  listType: ListType
   lotId: string
   sellerId: string
   amount: string
@@ -32,31 +35,36 @@ interface FormState {
   paidAt: string
 }
 
-function initial(lots: EventLot[], p?: EventParticipant | null, defaultSellerId?: string | null): FormState {
+function initial(lots: EventLot[], p?: EventParticipant | null, defaultSellerId?: string | null, defaultListType?: ListType): FormState {
   const lot = lots[0]
+  // cortesia e divulgação não têm lote nem valor: se virar pagante, parte do primeiro lote
+  const paying = p?.list_type === 'pagante' ? p : null
   return {
     name: p?.name ?? '',
     phone: p?.phone ?? '',
-    lotId: p ? (p.lot_id ?? '') : (lot?.id ?? ''),
+    listType: p?.list_type ?? defaultListType ?? 'pagante',
+    lotId: paying ? (paying.lot_id ?? '') : (lot?.id ?? ''),
     sellerId: (p ? p.seller_id : defaultSellerId) ?? '',
-    amount: p ? moneyToInput(p.amount_paid) : moneyToInput(lot?.price),
+    amount: moneyToInput(paying ? paying.amount_paid : lot?.price),
     method: p?.payment_method ?? 'pix',
     paidAt: p?.paid_at ?? todayISO(),
   }
 }
 
-export function ParticipantFormModal({ open, eventId, participant, lots, sellers, defaultSellerId, remaining, onClose, onSaved }: Props) {
+export function ParticipantFormModal({ open, eventId, participant, lots, sellers, defaultSellerId, defaultListType, remaining, onClose, onSaved }: Props) {
   const toast = useToast()
-  const [form, setForm] = useState<FormState>(() => initial(lots, participant, defaultSellerId))
+  const [form, setForm] = useState<FormState>(() => initial(lots, participant, defaultSellerId, defaultListType))
   const [phoneError, setPhoneError] = useState<string>()
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (open) {
-      setForm(initial(lots, participant, defaultSellerId))
+      setForm(initial(lots, participant, defaultSellerId, defaultListType))
       setPhoneError(undefined)
     }
   }, [open])
+
+  const paid = form.listType === 'pagante'
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm((f) => ({ ...f, [key]: value }))
 
@@ -73,9 +81,10 @@ export function ParticipantFormModal({ open, eventId, participant, lots, sellers
       event_id: eventId,
       name: form.name.trim(),
       phone: form.phone || null,
-      lot_id: form.lotId || null,
-      seller_id: form.sellerId || null,
-      amount_paid: parseMoney(form.amount),
+      list_type: form.listType,
+      lot_id: paid ? form.lotId || null : null,
+      seller_id: paid ? form.sellerId || null : null,
+      amount_paid: paid ? parseMoney(form.amount) : 0,
       payment_method: form.method,
       paid_at: form.paidAt,
     }
@@ -101,7 +110,7 @@ export function ParticipantFormModal({ open, eventId, participant, lots, sellers
     <Modal
       open={open}
       onClose={onClose}
-      title={participant ? 'Editar participante' : 'Adicionar pagante'}
+      title={participant ? 'Editar participante' : `Adicionar ${LIST_TYPES[form.listType].toLowerCase()}`}
       footer={
         participant ? (
           <>
@@ -134,7 +143,14 @@ export function ParticipantFormModal({ open, eventId, participant, lots, sellers
           }}
           error={phoneError}
         />
-        {sellers.length > 0 && (
+        <Select label="Lista" value={form.listType} onChange={(e) => set('listType', e.target.value as ListType)}>
+          {Object.entries(LIST_TYPES).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </Select>
+        {paid && sellers.length > 0 && (
           <Select label="Comissário" value={form.sellerId} onChange={(e) => set('sellerId', e.target.value)}>
             <option value="">Sem comissário</option>
             {sortByName(sellers).map((s) => (
@@ -144,32 +160,36 @@ export function ParticipantFormModal({ open, eventId, participant, lots, sellers
             ))}
           </Select>
         )}
-        <Select
-          label="Lote"
-          value={form.lotId}
-          onChange={(e) => {
-            const lot = lots.find((l) => l.id === e.target.value)
-            setForm((f) => ({ ...f, lotId: e.target.value, amount: lot ? moneyToInput(lot.price) : f.amount }))
-          }}
-        >
-          <option value="">Sem lote</option>
-          {lots.map((l) => (
-            <option key={l.id} value={l.id}>
-              {l.name} — {formatCurrency(l.price)}
-            </option>
-          ))}
-        </Select>
-        <div className="grid grid-cols-2 gap-3">
-          <MoneyInput label="Valor pago" required value={form.amount} onChange={(v) => set('amount', v)} />
-          <Select label="Forma" value={form.method} onChange={(e) => set('method', e.target.value as PaymentMethod)}>
-            {Object.entries(PAYMENT_METHODS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </Select>
-        </div>
-        <Input label="Data do pagamento" type="date" required value={form.paidAt} onChange={(e) => set('paidAt', e.target.value)} />
+        {paid && (
+          <>
+            <Select
+              label="Lote"
+              value={form.lotId}
+              onChange={(e) => {
+                const lot = lots.find((l) => l.id === e.target.value)
+                setForm((f) => ({ ...f, lotId: e.target.value, amount: lot ? moneyToInput(lot.price) : f.amount }))
+              }}
+            >
+              <option value="">Sem lote</option>
+              {lots.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name} — {formatCurrency(l.price)}
+                </option>
+              ))}
+            </Select>
+            <div className="grid grid-cols-2 gap-3">
+              <MoneyInput label="Valor pago" required value={form.amount} onChange={(v) => set('amount', v)} />
+              <Select label="Forma" value={form.method} onChange={(e) => set('method', e.target.value as PaymentMethod)}>
+                {Object.entries(PAYMENT_METHODS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <Input label="Data do pagamento" type="date" required value={form.paidAt} onChange={(e) => set('paidAt', e.target.value)} />
+          </>
+        )}
       </form>
     </Modal>
   )

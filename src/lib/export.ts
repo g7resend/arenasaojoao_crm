@@ -1,6 +1,6 @@
-import type { ArenaEvent, EventLot, EventMenuItem, EventParticipant, EventSeller } from '../types/db'
+import type { ArenaEvent, EventLot, EventMenuItem, EventParticipant, EventSeller, ListType } from '../types/db'
 import { eventImageUrl, loadImage } from './eventImages'
-import { PAYMENT_METHODS, formatCurrency, formatDate, formatDateLong, formatPhone, formatTime } from './format'
+import { LIST_TYPES, PAYMENT_METHODS, formatCurrency, formatDate, formatDateLong, formatPhone, formatTime } from './format'
 import { buildMenuPdf, type MenuLogo } from './menuPdf'
 
 export interface ExportContext {
@@ -15,6 +15,18 @@ export interface ExportContext {
 export function sortByName<T extends { name: string }>(list: T[]): T[] {
   return [...list].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }))
 }
+
+/** Quantos nomes há em cada lista do evento */
+export function listCounts(participants: EventParticipant[]) {
+  const count = (t: ListType) => participants.filter((p) => p.list_type === t).length
+  return [
+    { label: 'Pagantes', count: count('pagante') },
+    { label: 'Cortesias', count: count('cortesia') },
+    { label: 'Divulgação', count: count('divulgacao') },
+  ]
+}
+
+const hasFreeList = (participants: EventParticipant[]) => participants.some((p) => p.list_type !== 'pagante')
 
 function lotName(lots: EventLot[], id: string | null) {
   return lots.find((l) => l.id === id)?.name ?? '—'
@@ -52,20 +64,25 @@ function eventSubtitle(event: ArenaEvent) {
 export function exportCsv({ event, lots, sellers, participants }: ExportContext) {
   const esc = (v: string) => (/[;"\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v)
   const hasSellers = sellers.length > 0
-  const header = ['Nº', 'Nome', 'Telefone', 'Lote', ...(hasSellers ? ['Comissário'] : []), 'Valor pago', 'Forma de pagamento', 'Data do pagamento', 'Check-in']
-  const rows = sortByName(participants).map((p, i) => [
-    String(i + 1),
-    p.name,
-    p.phone ? formatPhone(p.phone) : '',
-    lotName(lots, p.lot_id),
-    ...(hasSellers ? [sellerName(sellers, p.seller_id)] : []),
-    Number(p.amount_paid).toFixed(2).replace('.', ','),
-    PAYMENT_METHODS[p.payment_method],
-    formatDate(p.paid_at),
-    p.checked_in ? 'Sim' : 'Não',
-  ])
+  const hasFree = hasFreeList(participants)
+  const header = ['Nº', 'Nome', ...(hasFree ? ['Lista'] : []), 'Telefone', 'Lote', ...(hasSellers ? ['Comissário'] : []), 'Valor pago', 'Forma de pagamento', 'Data do pagamento', 'Check-in']
+  const rows = sortByName(participants).map((p, i) => {
+    const paid = p.list_type === 'pagante'
+    return [
+      String(i + 1),
+      p.name,
+      ...(hasFree ? [LIST_TYPES[p.list_type]] : []),
+      p.phone ? formatPhone(p.phone) : '',
+      lotName(lots, p.lot_id),
+      ...(hasSellers ? [sellerName(sellers, p.seller_id)] : []),
+      paid ? Number(p.amount_paid).toFixed(2).replace('.', ',') : '',
+      paid ? PAYMENT_METHODS[p.payment_method] : '',
+      paid ? formatDate(p.paid_at) : '',
+      p.checked_in ? 'Sim' : 'Não',
+    ]
+  })
   const csv = [header, ...rows].map((r) => r.map(esc).join(';')).join('\r\n')
-  download(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }), `pagantes-${slug(event.name)}.csv`)
+  download(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }), `lista-${slug(event.name)}.csv`)
 }
 
 /** PDF para imprimir, com coluna de check-in em branco para marcar na entrada */
@@ -75,7 +92,9 @@ export async function exportPdf({ arenaName, event, lots, sellers, participants 
   const sorted = sortByName(participants)
   const total = participants.reduce((a, p) => a + Number(p.amount_paid), 0)
   const hasSellers = sellers.length > 0
-  const shift = hasSellers ? 1 : 0
+  const hasFree = hasFreeList(participants)
+  const shift = (hasSellers ? 1 : 0) + (hasFree ? 1 : 0)
+  const breakdown = hasFree ? `  ·  ${listCounts(participants).map((l) => `${l.label} ${l.count}`).join(' · ')}` : ''
 
   doc.setFillColor(10, 10, 10)
   doc.rect(0, 0, 210, 28, 'F')
@@ -91,20 +110,24 @@ export async function exportPdf({ arenaName, event, lots, sellers, participants 
 
   doc.setTextColor(60, 60, 60)
   doc.setFontSize(10)
-  doc.text(`Lista de pagantes: ${sorted.length}${event.capacity ? ` / ${event.capacity}` : ''}  ·  Total arrecadado: ${formatCurrency(total)}`, 14, 37)
+  doc.text(`Lista final: ${sorted.length}${event.capacity ? ` / ${event.capacity}` : ''}${breakdown}  ·  Total arrecadado: ${formatCurrency(total)}`, 14, 37)
 
   autoTable(doc, {
     startY: 41,
-    head: [['Nº', 'Nome', 'Lote', ...(hasSellers ? ['Comissário'] : []), 'Valor', 'Forma', 'Entrada']],
-    body: sorted.map((p, i) => [
-      String(i + 1),
-      p.name,
-      lotName(lots, p.lot_id),
-      ...(hasSellers ? [sellerName(sellers, p.seller_id)] : []),
-      formatCurrency(p.amount_paid),
-      PAYMENT_METHODS[p.payment_method],
-      p.checked_in ? 'X' : '',
-    ]),
+    head: [['Nº', 'Nome', ...(hasFree ? ['Lista'] : []), 'Lote', ...(hasSellers ? ['Comissário'] : []), 'Valor', 'Forma', 'Entrada']],
+    body: sorted.map((p, i) => {
+      const paid = p.list_type === 'pagante'
+      return [
+        String(i + 1),
+        p.name,
+        ...(hasFree ? [LIST_TYPES[p.list_type]] : []),
+        lotName(lots, p.lot_id),
+        ...(hasSellers ? [sellerName(sellers, p.seller_id)] : []),
+        paid ? formatCurrency(p.amount_paid) : '—',
+        paid ? PAYMENT_METHODS[p.payment_method] : '—',
+        p.checked_in ? 'X' : '',
+      ]
+    }),
     styles: { fontSize: 9, cellPadding: 2.2 },
     headStyles: { fillColor: [87, 19, 20], textColor: 255 },
     alternateRowStyles: { fillColor: [245, 245, 245] },
@@ -121,7 +144,7 @@ export async function exportPdf({ arenaName, event, lots, sellers, participants 
     },
   })
 
-  doc.save(`pagantes-${slug(event.name)}.pdf`)
+  doc.save(`lista-${slug(event.name)}.pdf`)
 }
 
 async function fetchEventLogo(path: string | null): Promise<MenuLogo | null> {
@@ -157,13 +180,14 @@ export function participantsText({ event, lots, participants }: ExportContext): 
   const sorted = sortByName(participants)
   const lines = sorted.map((p, i) => {
     const lot = lotName(lots, p.lot_id)
-    return `${i + 1}. ${p.name}${lot !== '—' && lots.length > 1 ? ` (${lot})` : ''}`
+    const tag = p.list_type !== 'pagante' ? LIST_TYPES[p.list_type] : lot !== '—' && lots.length > 1 ? lot : ''
+    return `${i + 1}. ${p.name}${tag ? ` (${tag})` : ''}`
   })
   return [
     `🏐 *${event.name}*`,
     `📅 ${eventSubtitle(event)}`,
     '',
-    `✅ *Lista de pagantes (${sorted.length}${event.capacity ? `/${event.capacity}` : ''})*`,
+    `✅ *Lista final (${sorted.length}${event.capacity ? `/${event.capacity}` : ''})*`,
     '',
     ...lines,
   ].join('\n')

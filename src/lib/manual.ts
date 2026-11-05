@@ -311,7 +311,7 @@ export const MANUAL: ManualSection[] = [
         q: 'Como adicionar vários pagantes de uma vez?',
         a: [
           '1. Copie a lista de nomes (do WhatsApp, por exemplo).',
-          '2. No evento, toque em "Colar lista". Pela aba "Comissários", abra o comissário e use o "Colar lista" dele: ele já vem escolhido.',
+          '2. No evento, toque em "Colar lista". Pela aba "Listas", abra o comissário, Cortesias ou Divulgação e use o "Colar lista" de lá: a lista já vem escolhida.',
           '3. Cole os nomes, um por linha. Numeração, emojis e telefone são retirados sozinhos.',
           '4. Confira lote, valor, forma e data, que valem para todos da lista, e toque em "Adicionar".',
           'Nomes repetidos, ou que já estão no evento, não entram. Se for mesmo outra pessoa com o mesmo nome, use "Adicionar pagante".',
@@ -332,13 +332,25 @@ export const MANUAL: ManualSection[] = [
         id: 'comissarios',
         q: 'Como controlar o que cada comissário vendeu?',
         a: [
-          '1. Abra o evento, vá na aba "Comissários" e toque em "Novo comissário".',
+          '1. Abra o evento, vá na aba "Listas" e toque em "Novo comissário".',
           '2. Toque no nome do comissário para abrir a lista dele e use "Adicionar pagante". Com "Salvar e próximo" o comissário continua escolhido.',
           '3. Cada comissário mostra quantos ingressos vendeu e o valor total, separado por forma de pagamento.',
-          'Todos os pagantes entram juntos na lista total, na aba "Pagantes". Lá, ao adicionar ou editar, dá para escolher o comissário no campo "Comissário".',
+          'Todos os pagantes entram juntos na aba "Lista final". Lá, ao adicionar ou editar, dá para escolher o comissário no campo "Comissário".',
           'Quem foi vendido sem comissário aparece em "Sem comissário". Excluir um comissário não apaga os pagantes dele: eles passam para "Sem comissário".',
         ],
-        tags: 'comissário comissarios vendedor vendas ingresso promoter lista total',
+        tags: 'comissário comissarios vendedor vendas ingresso promoter lista total final',
+      },
+      {
+        id: 'cortesias-divulgacao',
+        q: 'Como colocar nomes de cortesia ou divulgação?',
+        a: [
+          '1. Abra o evento e vá na aba "Listas".',
+          '2. Toque em "Cortesias" ou "Divulgação" para abrir a lista.',
+          '3. Use "Adicionar nome" ou "Colar lista". Não precisa informar lote, valor nem forma de pagamento.',
+          'Esses nomes entram na aba "Lista final", na portaria e nas exportações, marcados como Cortesia ou Divulgação. Eles ocupam vaga na capacidade do evento, mas não somam no arrecadado.',
+          'Para mudar alguém de lista, toque no lápis ao lado do nome e troque o campo "Lista". Ao passar um pagante para Cortesia ou Divulgação, o valor pago dele deixa de contar.',
+        ],
+        tags: 'cortesia cortesias divulgação divulgacao convidado vip free lista final grátis',
       },
       {
         id: 'cardapio',
@@ -374,13 +386,14 @@ export const MANUAL: ManualSection[] = [
       },
       {
         id: 'exportar',
-        q: 'Como exportar ou imprimir a lista de pagantes?',
+        q: 'Como exportar ou imprimir a lista final?',
         a: [
           'No evento, use os botões (a lista sai sempre em ordem alfabética):',
           '1. "Copiar lista": texto pronto para colar no WhatsApp.',
           '2. "Excel (CSV)": planilha que abre no Excel.',
           '3. "PDF": lista para imprimir, com uma coluna "Entrada" para marcar à mão.',
           'Se o evento tiver comissários, a planilha e o PDF trazem também o comissário de cada pagante.',
+          'Cortesias e Divulgação saem na mesma lista, com o nome da lista ao lado.',
         ],
         tags: 'exportar imprimir pdf excel planilha copiar lista',
       },

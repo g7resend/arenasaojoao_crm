@@ -198,7 +198,7 @@ export default function Dashboard() {
               <div className="flex justify-between text-sm">
                 <span className="font-medium text-neutral-700">
                   {data.nextEvent.paidCount}
-                  {data.nextEvent.capacity ? ` / ${data.nextEvent.capacity}` : ''} pagantes
+                  {data.nextEvent.capacity ? ` / ${data.nextEvent.capacity}` : ''} na lista
                 </span>
                 <span className="font-semibold tabular-nums text-emerald-700">{formatCurrency(data.nextEvent.total)}</span>
               </div>

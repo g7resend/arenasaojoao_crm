@@ -1,3 +1,5 @@
+import type { ListType } from '../types/db'
+
 export const TZ = 'America/Sao_Paulo'
 
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -143,4 +145,10 @@ export function moneyToInput(value: number | string | null | undefined): string 
 /** Normaliza para comparação/busca (sem acentos, minúsculo) */
 export function normalizeText(s: string): string {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
+}
+
+export const LIST_TYPES: Record<ListType, string> = {
+  pagante: 'Pagante',
+  cortesia: 'Cortesia',
+  divulgacao: 'Divulgação',
 }
