@@ -32,9 +32,11 @@ function lotName(lots: EventLot[], id: string | null) {
   return lots.find((l) => l.id === id)?.name ?? '—'
 }
 
-function sellerName(sellers: EventSeller[], id: string | null) {
-  return sellers.find((s) => s.id === id)?.name ?? '—'
+function sellerName(sellers: EventSeller[], p: EventParticipant) {
+  return sellers.find((s) => s.id === p.seller_id)?.name ?? (p.sold_at_gate ? 'Portaria' : '—')
 }
+
+const hasSellerColumn = (sellers: EventSeller[], participants: EventParticipant[]) => sellers.length > 0 || participants.some((p) => p.sold_at_gate)
 
 function slug(s: string) {
   return s
@@ -63,7 +65,7 @@ function eventSubtitle(event: ArenaEvent) {
 /** CSV com BOM e separador ";" (abre direto no Excel em pt-BR) */
 export function exportCsv({ event, lots, sellers, participants }: ExportContext) {
   const esc = (v: string) => (/[;"\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v)
-  const hasSellers = sellers.length > 0
+  const hasSellers = hasSellerColumn(sellers, participants)
   const hasFree = hasFreeList(participants)
   const header = ['Nº', 'Nome', ...(hasFree ? ['Lista'] : []), 'Telefone', 'Lote', ...(hasSellers ? ['Comissário'] : []), 'Valor pago', 'Forma de pagamento', 'Data do pagamento', 'Check-in']
   const rows = sortByName(participants).map((p, i) => {
@@ -74,7 +76,7 @@ export function exportCsv({ event, lots, sellers, participants }: ExportContext)
       ...(hasFree ? [LIST_TYPES[p.list_type]] : []),
       p.phone ? formatPhone(p.phone) : '',
       lotName(lots, p.lot_id),
-      ...(hasSellers ? [sellerName(sellers, p.seller_id)] : []),
+      ...(hasSellers ? [sellerName(sellers, p)] : []),
       paid ? Number(p.amount_paid).toFixed(2).replace('.', ',') : '',
       paid ? PAYMENT_METHODS[p.payment_method] : '',
       paid ? formatDate(p.paid_at) : '',
@@ -91,7 +93,7 @@ export async function exportPdf({ arenaName, event, lots, sellers, participants 
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const sorted = sortByName(participants)
   const total = participants.reduce((a, p) => a + Number(p.amount_paid), 0)
-  const hasSellers = sellers.length > 0
+  const hasSellers = hasSellerColumn(sellers, participants)
   const hasFree = hasFreeList(participants)
   const shift = (hasSellers ? 1 : 0) + (hasFree ? 1 : 0)
   const breakdown = hasFree ? `  ·  ${listCounts(participants).map((l) => `${l.label} ${l.count}`).join(' · ')}` : ''
@@ -122,7 +124,7 @@ export async function exportPdf({ arenaName, event, lots, sellers, participants 
         p.name,
         ...(hasFree ? [LIST_TYPES[p.list_type]] : []),
         lotName(lots, p.lot_id),
-        ...(hasSellers ? [sellerName(sellers, p.seller_id)] : []),
+        ...(hasSellers ? [sellerName(sellers, p)] : []),
         paid ? formatCurrency(p.amount_paid) : '—',
         paid ? PAYMENT_METHODS[p.payment_method] : '—',
         p.checked_in ? 'X' : '',

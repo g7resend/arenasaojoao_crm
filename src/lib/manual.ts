@@ -378,11 +378,23 @@ export const MANUAL: ManualSection[] = [
         a: [
           '1. No Supabase, abra Authentication → Users → Add user → Create new user. Coloque e-mail e senha e marque "Auto Confirm User".',
           '2. No sistema, abra o evento, vá na aba "Portaria", digite esse e-mail e toque em "Liberar este evento".',
-          '3. A pessoa entra no mesmo site com esse login. Ela só vê a lista de nomes dos eventos liberados e marca quem entrou.',
+          '3. A pessoa entra no mesmo site com esse login. Ela só vê a lista de nomes dos eventos liberados, marca quem entrou e registra vendas na hora.',
           'Ela não vê telefone, valores nem nenhuma outra área do sistema.',
           'O acesso continua até você tirar: na aba "Portaria", toque na lixeira ao lado do e-mail. As marcações de entrada aparecem na lista do evento.',
         ],
         tags: 'portaria porteiro login usuário acesso entrada liberar recepção',
+      },
+      {
+        id: 'venda-portaria',
+        q: 'Como vender ingresso na hora, pela portaria?',
+        a: [
+          '1. No login da portaria, abra o evento e toque em "Registrar venda". Se buscou um nome e ele não está na lista, o botão aparece ali e o nome já vem preenchido.',
+          '2. Preencha nome, valor pago e forma de pagamento. O telefone é opcional.',
+          '3. Toque em "Registrar". O nome entra na lista final com a entrada já marcada.',
+          'Para conferir o caixa, abra o evento no login de administrador, vá na aba "Listas" e toque em "Vendas na portaria": lá aparecem os nomes, o total e o valor por forma de pagamento.',
+          'A portaria não edita nem exclui vendas. Se algo saiu errado, corrija pelo lápis ou pela lixeira ao lado do nome, no login de administrador.',
+        ],
+        tags: 'venda vender portaria na hora bilheteria ingresso caixa dinheiro pix cartão',
       },
       {
         id: 'exportar',

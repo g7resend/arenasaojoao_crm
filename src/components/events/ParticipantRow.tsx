@@ -32,7 +32,7 @@ export function ParticipantRow({ participant: p, lotName, sellerName, onToggleCh
         <p className={`break-words font-medium ${p.checked_in ? 'text-emerald-800' : 'text-neutral-900'}`}>{p.name}</p>
         <p className="text-xs text-neutral-500">
           {p.list_type === 'pagante'
-            ? [lotName, formatCurrency(p.amount_paid), PAYMENT_METHODS[p.payment_method], formatDate(p.paid_at), sellerName && `Comissário: ${sellerName}`].filter(Boolean).join(' · ')
+            ? [lotName, formatCurrency(p.amount_paid), PAYMENT_METHODS[p.payment_method], formatDate(p.paid_at), sellerName && `Comissário: ${sellerName}`, !sellerName && p.sold_at_gate && 'Portaria'].filter(Boolean).join(' · ')
             : LIST_TYPES[p.list_type]}
         </p>
       </div>

@@ -33,7 +33,8 @@ export default function ComissariosTab({ eventId, sellers, lots, participants, r
   const [expanded, setExpanded] = useState<string | null>(null)
   const [form, setForm] = useState<{ open: boolean; seller: EventSeller | null }>({ open: false, seller: null })
 
-  const soldBy = (sellerId: string | null) => sortByName(participants.filter((p) => p.list_type === 'pagante' && p.seller_id === sellerId))
+  const soldBy = (sellerId: string | null) => sortByName(participants.filter((p) => p.list_type === 'pagante' && p.seller_id === sellerId && (sellerId !== null || !p.sold_at_gate)))
+  const atGate = sortByName(participants.filter((p) => p.list_type === 'pagante' && p.seller_id === null && p.sold_at_gate))
   const inList = (listType: ListType) => sortByName(participants.filter((p) => p.list_type === listType))
   const direct = soldBy(null)
 
@@ -82,14 +83,16 @@ export default function ComissariosTab({ eventId, sellers, lots, participants, r
           <div className="border-t border-neutral-100">
             <div className="space-y-2 px-4 py-3">
               {byMethod.length > 0 && <p className="text-xs text-neutral-500">{byMethod.map((m) => `${m.label}: ${formatCurrency(m.total)}`).join(' · ')}</p>}
-              <div className="flex flex-wrap gap-2">
-                <Button size="sm" icon={<UserPlus size={16} />} onClick={() => onAddParticipant(sellerId, listType)}>
-                  {paid ? 'Adicionar pagante' : 'Adicionar nome'}
-                </Button>
-                <Button size="sm" variant="secondary" icon={<ClipboardPaste size={16} />} onClick={() => onPasteList(sellerId, listType)}>
-                  Colar lista
-                </Button>
-              </div>
+              {key !== 'portaria' && (
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" icon={<UserPlus size={16} />} onClick={() => onAddParticipant(sellerId, listType)}>
+                    {paid ? 'Adicionar pagante' : 'Adicionar nome'}
+                  </Button>
+                  <Button size="sm" variant="secondary" icon={<ClipboardPaste size={16} />} onClick={() => onPasteList(sellerId, listType)}>
+                    Colar lista
+                  </Button>
+                </div>
+              )}
             </div>
             {list.length > 0 && (
               <ul className="divide-y divide-neutral-100 border-t border-neutral-100">
@@ -116,6 +119,7 @@ export default function ComissariosTab({ eventId, sellers, lots, participants, r
       <div className="space-y-3">
         {renderGroup('cortesia', 'Cortesias', inList('cortesia'), 'cortesia', null)}
         {renderGroup('divulgacao', 'Divulgação', inList('divulgacao'), 'divulgacao', null)}
+        {atGate.length > 0 && renderGroup('portaria', 'Vendas na portaria', atGate, 'pagante', null)}
       </div>
 
       <div className="mb-4 mt-6">

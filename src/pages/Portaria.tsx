@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeft, CalendarDays, Check, DoorOpen, LogOut, Search } from 'lucide-react'
+import { ArrowLeft, CalendarDays, Check, DoorOpen, LogOut, Search, ShoppingCart } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { formatDateLong, formatTime, normalizeText } from '../lib/format'
 import { sortByName } from '../lib/export'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../hooks/useToast'
+import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Field'
 import { Card, EmptyState, Spinner, Tabs } from '../components/ui/Misc'
 import { Logo } from '../components/ui/Logo'
+import { GateSaleModal } from '../components/events/GateSaleModal'
 import type { GateEvent, GateParticipant } from '../types/db'
 
 type Filter = 'todos' | 'faltam' | 'entraram'
@@ -80,6 +82,7 @@ function GateList({ event, onBack, onLostAccess }: { event: GateEvent; onBack?: 
   const [people, setPeople] = useState<GateParticipant[] | null>(null)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<Filter>('faltam')
+  const [selling, setSelling] = useState(false)
   const saving = useRef(0)
 
   const load = useCallback(async () => {
@@ -141,6 +144,12 @@ function GateList({ event, onBack, onLostAccess }: { event: GateEvent; onBack?: 
         Entraram <strong className="tabular-nums text-neutral-900">{entered}</strong> de <span className="tabular-nums">{list.length}</span>
       </p>
 
+      <div className="mb-3">
+        <Button full icon={<ShoppingCart size={16} />} onClick={() => setSelling(true)}>
+          Registrar venda
+        </Button>
+      </div>
+
       <div className="relative mb-3">
         <Search size={16} className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-neutral-400" />
         <Input placeholder="Buscar por nome" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
@@ -159,7 +168,17 @@ function GateList({ event, onBack, onLostAccess }: { event: GateEvent; onBack?: 
 
       <Card>
         {visible.length === 0 ? (
-          <EmptyState icon={<Search size={40} />} title={search ? 'Nome não está na lista' : 'Ninguém aqui'} />
+          <EmptyState
+            icon={<Search size={40} />}
+            title={search ? 'Nome não está na lista' : 'Ninguém aqui'}
+            action={
+              search ? (
+                <Button icon={<ShoppingCart size={16} />} onClick={() => setSelling(true)}>
+                  Registrar venda
+                </Button>
+              ) : undefined
+            }
+          />
         ) : (
           <ul className="divide-y divide-neutral-100">
             {visible.map((p) => (
@@ -185,6 +204,19 @@ function GateList({ event, onBack, onLostAccess }: { event: GateEvent; onBack?: 
           </ul>
         )}
       </Card>
+
+      <GateSaleModal
+        open={selling}
+        eventId={event.id}
+        initialName={search}
+        takenNames={list.map((p) => p.name)}
+        onClose={() => setSelling(false)}
+        onSaved={async () => {
+          await load()
+          setSearch('')
+          setSelling(false)
+        }}
+      />
     </>
   )
 }

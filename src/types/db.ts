@@ -121,6 +121,7 @@ export interface EventParticipant {
   lot_id: string | null
   seller_id: string | null
   list_type: ListType
+  sold_at_gate: boolean
   name: string
   phone: string | null
   payment_method: PaymentMethod
