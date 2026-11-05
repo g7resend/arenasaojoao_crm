@@ -52,9 +52,11 @@ export default function CardapioTab({ event, arenaName }: { event: ArenaEvent; a
   async function handlePdf() {
     setExporting(true)
     try {
-      await exportMenuPdf({ arenaName, event, items })
-    } catch {
-      toast('Erro ao gerar o PDF.', 'error')
+      const withImage = await exportMenuPdf({ arenaName, event, items })
+      if (!withImage) toast('PDF gerado sem a imagem do evento: não foi possível usar a imagem.', 'error')
+    } catch (e) {
+      console.error(e)
+      toast(`Erro ao gerar o PDF: ${e instanceof Error ? e.message : 'motivo desconhecido'}`, 'error')
     }
     setExporting(false)
   }

@@ -134,10 +134,22 @@ async function fetchEventLogo(path: string | null): Promise<MenuLogo | null> {
   return { data: new Uint8Array(await blob.arrayBuffer()), width: img.naturalWidth, height: img.naturalHeight }
 }
 
-/** Cardápio em PDF A3 para imprimir, com a imagem do evento no topo */
-export async function exportMenuPdf({ arenaName, event, items }: { arenaName: string; event: ArenaEvent; items: EventMenuItem[] }) {
-  const [{ jsPDF }, logo] = await Promise.all([import('jspdf'), fetchEventLogo(event.image_path)])
-  buildMenuPdf({ JsPDF: jsPDF, title: event.name, arenaName, items, logo }).save(`cardapio-${slug(event.name)}.pdf`)
+/**
+ * Cardápio em PDF A3 para imprimir, com a imagem do evento no topo.
+ * Problema na imagem não impede o cardápio: sai sem logo e devolve false.
+ */
+export async function exportMenuPdf({ arenaName, event, items }: { arenaName: string; event: ArenaEvent; items: EventMenuItem[] }): Promise<boolean> {
+  const { jsPDF } = await import('jspdf')
+  const build = (logo: MenuLogo | null) => buildMenuPdf({ JsPDF: jsPDF, title: event.name, arenaName, items, logo })
+  const filename = `cardapio-${slug(event.name)}.pdf`
+  try {
+    build(await fetchEventLogo(event.image_path)).save(filename)
+    return true
+  } catch (e) {
+    console.error('Cardápio sem imagem:', e)
+    build(null).save(filename)
+    return false
+  }
 }
 
 /** Texto para colar no WhatsApp */

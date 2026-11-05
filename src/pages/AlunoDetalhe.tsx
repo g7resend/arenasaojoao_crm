@@ -58,6 +58,10 @@ export default function AlunoDetalhe() {
   async function handleDelete() {
     if (!student) return
     if (!confirm(`Excluir ${student.name}?\n\nTodo o histórico de mensalidades deste aluno também será apagado. Para manter o histórico, apenas marque como inativo.`)) return
+    // a aula avulsa precisa de aluno ou de nome: sem isso o banco recusa a exclusão.
+    // Grava o nome na aula, que continua na agenda e no financeiro como avulsa.
+    const lessons = await supabase.from('private_lessons').update({ guest_name: student.name, guest_phone: student.phone }).eq('student_id', student.id)
+    if (lessons.error) return toast('Erro ao excluir aluno.', 'error')
     const { error } = await supabase.from('students').delete().eq('id', student.id)
     if (error) return toast('Erro ao excluir aluno.', 'error')
     toast('Aluno excluído.')
